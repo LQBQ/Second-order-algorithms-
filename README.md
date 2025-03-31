@@ -27,6 +27,8 @@ Kássio Michell Gomes de Lima1,*
 
 3 Instituto de Química, Universidade Federal do Rio Grande do Norte, Natal, Brazil
 
+*Corresponding Author
+E-mail: kassio.lima@ufrn.br
 
 # Methodology
 

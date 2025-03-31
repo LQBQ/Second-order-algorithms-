@@ -2,7 +2,7 @@
 
 # About the Project
 
-This repository contains supplementary material for the work "EEM fluorescence coupled with second-order algorithms in R for detecting extra virgin olive oil adulteration: an experimental approach for undergraduate students - Part II", submitted to the Journal of Chemical Education. The study aims to present an experimental approach to teaching second-order chemometric algorithms in the context of detecting adulteration in extra virgin olive oil (EVOO).
+This repository contains supplementary material for the work "EEM fluorescence coupled with second-order algorithms in R for detecting extra virgin olive oil adulteration: an experimental approach for undergraduate students", submitted to the Journal of Chemical Education. The study aims to present an experimental approach to teaching second-order chemometric algorithms in the context of detecting adulteration in extra virgin olive oil (EVOO).
 
 # Motivation
 
@@ -10,7 +10,7 @@ The adulteration of extra virgin olive oil is a recurring problem in the food in
 
 # Institution and Team
 
-This project was developed at the Laboratory of Biological Chemistry and Chemometrics (LQBQ), part of the Institute of Chemistry at the Federal University of Rio Grande do Norte (UFRN), under the coordination of Prof. Dr. Kássio M.G. de Lima.
+This project was developed at the Laboratory of Biological Chemistry and Chemometrics (LQBQ), part of the Institute of Chemistry at the Federal University of Rio Grande do Norte (UFRN), under the coordination of Prof. Dr. Kássio Michell Gomes de Lima.
 
 # Authors:
 

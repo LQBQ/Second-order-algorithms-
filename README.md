@@ -14,19 +14,19 @@ This project was developed at the Laboratory of Biological Chemistry and Chemome
 
 # Authors:
 
-Ramon B. P. Alves (LQBQ - UFRN)
+Ramon Brenno Pereira Alves1, 
+Anne Beatriz Figueira Câmara1, 
+Hellyda Katharine Tomaz de Andrade Silva1, 
+Ayrton Lucas Firmino do Nascimento1,2, 
+Luiz Seixas das Neves3 and 
+Kássio Michell Gomes de Lima1,*
 
-Anne B. F. Câmara (LQBQ - UFRN)
+1 Laboratório de Química Biológica e Quimiometria, Instituto de Química, Universidade Federal do Rio Grande do Norte, Natal, Brazil
 
-Hellyda ... (LQBQ - UFRN)
+2 Laboratório de Cromatografia e Espectrometria de Massas (LACEM), Instituto de Química, Universidade de Goiás, Goiânia, Brazil.
 
-Ayrton ... (LQBQ - UFRN / Laboratory...)
+3 Instituto de Química, Universidade Federal do Rio Grande do Norte, Natal, Brazil
 
-Luiz S. Neves (Institute of Chemistry - UFRN)
-
-Kássio M.G. de Lima (LQBQ - UFRN)
-
-Contact: kassio.lima@ufrn.br
 
 # Methodology
 

@@ -81,3 +81,5 @@ We hope this material will be useful for researchers and educators interested in
 For questions or suggestions, please contact us via email.
 
 License: This repository is available under the MIT license. Feel free to contribute, modify, and share.
+
+See the [LICENSE](./LICENSE) file for the full license text.

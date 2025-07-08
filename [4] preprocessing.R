@@ -1,3 +1,6 @@
+#### NOTE: This script is intended for use only after open EEM samples (using "[2] open EEM samples").
+#### It requires the samples to be open in the R environment
+
 ### Function to Remove Harmonic Scattering
 # If the package is not yet installed in your R environment, use the command below:
 install.packages("zoo")

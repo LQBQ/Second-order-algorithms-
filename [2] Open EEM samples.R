@@ -1,3 +1,5 @@
+#### NOTE: This script is intended solely for samples already combined using the script [1] ("import + combine ASC files")
+
 ### Open EEM Samples
 
 # Set the directory where the .ASC files are located on your computer:

@@ -1,18 +1,32 @@
-## Install and load required packages
-install.packages(c("multiway", "ThreeWay", "R.matlab", "plot3D", "plotly", "prospectr", "MASS", "caret"))
+#### NOTE: This script can only be used after the 3D matrix has been assembled (using "[5] Function to Create a 3D Array")
+#### Note that the PARAFAC-LDA matrix considers all samples in this case (pure and adulterated).
 
-library(multiway)
-library(ThreeWay)
-library(R.matlab)
-library(plot3D)
-library(plotly)
-library(prospectr)
-library(MASS)
-library(caret)
+### PARAFAC-LDA 
+### (Parallel factor analysis - linear discriminant analysis)
 
-## Set working directory
-data_dir <- "~/Your/Path/Here"  # Adjust as needed
-setwd(data_dir)
+# Function to automatically install (if needed) and load required packages
+load_required_packages <- function(packages) {
+  for (pkg in packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+    library(pkg, character.only = TRUE)
+  }
+}
+
+# Vector of required packages
+required_packages <- c(
+  "multiway", "ThreeWay", "R.matlab", "plot3D", "plotly", 
+  "prospectr", "MASS", "caret"
+)
+
+# Run the function to ensure all packages are installed and loaded
+load_required_packages(required_packages)
+
+# Define the input directory where the 3D matrix are attached
+input_directory <- "path/to/your/directory"   # Adjust the path as needed
+# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+# For compatibility, replace backslashes "\" with forward slashes "/" in your path.
 
 ## Load Data
 data <- readMat("Sample_Data.mat")
@@ -21,17 +35,16 @@ X <- data$x
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
 nmEM <- t(data.frame(seq(301, 700, by = 1)))
 
-# Define sample classes (modify as needed)
-A <- data.frame(matrix(1, nrow = 12, ncol = 1))  # Class 1
-B <- data.frame(matrix(2, nrow = 15, ncol = 1))  # Class 2
-Y <- rbind(A, B)
+# Total: 27 samples → 12 pure (class 1), 15 adulterated (class 2)
+Y <- factor(c(rep(1, 12), rep(2, 15)))  # As a factor for modeling
+# Again, if you working with other dataset, please, consider change the parameters 
 
-## Visualizing Data
-data_class1 <- readMat("Class1.mat")
-data_class2 <- readMat("Class2.mat")
+# Accessing only class 1 samples (first 12)
+X1 <- X[1:12,,]
 
-X1 <- data_class1$x
-X2 <- data_class2$x
+# Accessing only class 2 samples (samples 13 to 27)
+X2 <- X[13:27,,]
+
 X1m <- colMeans(X1)
 X2m <- colMeans(X2)
 
@@ -165,3 +178,49 @@ dev.new()
 plot(pred_test$x[, 1], col = as.factor(group_test), pch = 19, 
      xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Test")
 legend("topleft", legend = c("Pure", "Adulterated"), col = c(1, 2), pch = 19)
+
+# This script performs a classification analysis using the PARAFAC-LDA (Parallel Factor Analysis 
+# combined with Linear Discriminant Analysis) approach, applied to Excitation-Emission Matrices (EEMs).
+# 
+# REQUIREMENTS:
+# - The 3D data matrix 'X' must be pre-assembled and loaded in the workspace.
+# - X must have dimensions [samples × emission × excitation], with all samples concatenated.
+# - In this study: 12 pure samples (class 1) and 15 adulterated samples (class 2), total = 27.
+#
+# STEP-BY-STEP OVERVIEW:
+# 1. Packages: Ensures all necessary packages are installed and loaded.
+#
+# 2. Data loading:
+#    - Loads the 3D fluorescence matrix (`X`) and defines the excitation/emission wavelength axes.
+#    - Defines class labels `Y` (1 for pure, 2 for adulterated).
+#
+# 3. Visualization:
+#    - Visualizes raw and averaged fluorescence data for both classes.
+#
+# 4. PARAFAC modeling:
+#    - Applies PARAFAC decomposition to the entire dataset (`X`).
+#    - Parameters: `nfac = 6` (number of latent factors), with convergence and iteration control.
+#    - Output matrices: 
+#       A = scores (samples × components),
+#       B = emission loadings (emission × components),
+#       C = excitation loadings (excitation × components).
+#
+# 5. Classification preparation:
+#    - Sample scores (from matrix A) are split by class.
+#    - Training and test sets are selected using the KenStone algorithm for sample representativity.
+#
+# 6. LDA classification:
+#    - Trains an LDA model on the selected training subset.
+#    - Performs classification on training and test sets.
+#    - Also performs cross-validation on the training set.
+#    - Calculates performance metrics: accuracy, sensitivity, specificity.
+#    - Constructs confusion matrices.
+#
+# 7. Visualization of classification results:
+#    - Plots boxplots and scatter plots of LD1 scores for both training and test sets.
+#
+# NOTE:
+# - The number of PARAFAC components (`nfac`), the number of parallel analysis starts (`nstart`), 
+#   the number of maximum interactions (`maxit`), the convergence tolerance (`ctol`) and LDA parameters should be optimized based on 
+#   explained variance (R²), core consistency, or validation performance.
+

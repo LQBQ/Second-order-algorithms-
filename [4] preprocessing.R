@@ -1,6 +1,8 @@
 ### Function to Remove Harmonic Scattering
-# Install and load necessary package
+# If the package is not yet installed in your R environment, use the command below:
 install.packages("zoo")
+
+# After installation, load the package:
 library(zoo)
 
 # Function to remove and interpolate scattered regions
@@ -41,8 +43,10 @@ em_limit <- 5   # Emission scattering limit
 
 # Apply the function
 sampleT <- remove_and_fill_scattering(raw_sample, exc_wavelengths, em_wavelengths, exc_limit, em_limit)
+#Examploe to use: A05T <- remove_and_fill_scattering(A05, exc_wavelengths, em_wavelengths, exc_limit, em_limit)
 
 visualize_3D_surface(as.matrix(sampleT)) #remenber to apply the visualize_3d_surface to plot the cleaned_sample
+# Example to use: visualize_3D_surface(as.matrix(A05T))
 
 # Define the output directory where files will be saved
 output_dir <- "~/Your/Path/Here"  # Adjust the path as needed
@@ -72,3 +76,24 @@ for (obj in processed_objects) {
     cat("The object", obj, "is not a matrix or dataframe and was ignored.\n")
   }
 }
+
+# This script defines and applies a function to remove first- and second-order Rayleigh scattering 
+# from EEM data (excitation-emission matrices), commonly present in fluorescence spectroscopy.
+#
+# The function `remove_and_fill_scattering()`:
+# - Identifies spectral regions affected by scattering based on the excitation wavelengths.
+# - Masks these regions (sets them to NA) within a defined ±limit around each scattering center.
+# - Reconstructs the missing values using linear interpolation (`na.approx`, from the `zoo` package).
+#
+# INPUTS:
+# - eem_matrix: the raw EEM data matrix (emission × excitation).
+# - exc_wavelengths: vector of excitation wavelengths (e.g., 310–430 nm).
+# - em_wavelengths: vector of emission wavelengths (e.g., 300–800 nm).
+# - exc_limit / em_limit: numeric range defining how close to the Rayleigh lines data should be removed.
+#
+# USAGE EXAMPLE:
+# A05T <- remove_and_fill_scattering(A05, exc_wavelengths, em_wavelengths, exc_limit, em_limit)
+# visualize_3D_surface(as.matrix(A05T))  # Optional: visualize the cleaned matrix
+#
+# After cleaning, all processed objects ending with "T" are saved as individual .csv files in the specified directory.
+# The script filters objects in the environment, validates them as matrices/data.frames, and writes them to disk.

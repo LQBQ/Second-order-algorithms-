@@ -1,8 +1,9 @@
 ### Open EEM Samples
 
-# Prompt the user to define the directory where the .csv files are located
-input_directory <- readline(prompt = "Enter the directory path containing the .csv files: ")
-setwd(input_directory)
+# Set the directory where the .ASC files are located on your computer:
+input_directory <- "path/to/your/directory"  # Replace with the correct path
+# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/CSV samples"
+# For compatibility, replace backslashes "\" with forward slashes "/" in your path.
 
 # Get a list of all .csv files in the directory
 csv_files <- list.files(pattern = "\\.csv$")
@@ -24,3 +25,15 @@ for (file in csv_files) {
 
 # Check the loaded data
 ls()
+
+# After running this script, each .csv file will be loaded into the R environment
+# as a separate data frame named according to its file name (e.g., T1, C1, etc.).
+#
+# Each data frame represents a single sample and corresponds to an Excitation-Emission Matrix (EEM).
+#
+# Based on this study's setup:
+# - Excitation wavelengths: from 310 to 430 nm in 10 nm steps → 13 columns (variables)
+# - Emission wavelengths: from 300 to 800 nm in 1 nm steps → 501 rows
+#
+# Thus, each data frame will have dimensions 501 × 13 (emission × excitation),
+# where each row is a fluorescence emission spectrum for a given excitation wavelength.

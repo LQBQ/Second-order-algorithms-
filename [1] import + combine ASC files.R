@@ -1,4 +1,5 @@
 #### NOTE: This script is intended solely for importing samples in .ASC format.
+#### It requires the samples to have the correct naming convention.
 
 ### Step 1: Install and load the required package
 # If the package is not yet installed in your R environment, use the command below:

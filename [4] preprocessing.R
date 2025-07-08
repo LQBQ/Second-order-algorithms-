@@ -50,8 +50,8 @@ visualize_3D_surface(as.matrix(sampleT)) #remenber to apply the visualize_3d_sur
 
 # Define the output directory where files will be saved
 # Set the directory where the .ASC files are located on your computer:
-input_directory <- "path/to/your/directory"   # Adjust the path as needed
-# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+output_directory <- "path/to/your/directory"   # Adjust the path as needed
+# Example: output_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
 # For compatibility, replace backslashes "\" with forward slashes "/" in your path. 
 
 if (!dir.exists(output_dir)) {

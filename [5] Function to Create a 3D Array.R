@@ -57,7 +57,7 @@ library(R.matlab)
 
 # Define the output directory dynamically
 output_directory <- "path/to/your/directory"   # Adjust the path as needed
-# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+# Example: output_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
 # For compatibility, replace backslashes "\" with forward slashes "/" in your path. 
 
 # Save as .mat format to preserve the 3D array dimensions

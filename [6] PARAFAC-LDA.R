@@ -33,7 +33,10 @@ data <- readMat("Sample_Data.mat")
 X <- data$x
 
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
-nmEM <- t(data.frame(seq(301, 700, by = 1)))
+nmEM <- t(data.frame(seq(301, 700, by = 1))) 
+# Here, the emission number has changed due to the clipping of the excitation-emission matrix performed in preprocessing. 
+# Change the values ​​according to your dataset, if necessary.
+# Make sure that the emission number is in accordance with the second dimension of the 3D matrix.
 
 # Total: 27 samples → 12 pure (class 1), 15 adulterated (class 2)
 Y <- factor(c(rep(1, 12), rep(2, 15)))  # As a factor for modeling

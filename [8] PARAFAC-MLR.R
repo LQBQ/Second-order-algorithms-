@@ -1,39 +1,43 @@
-## Loading Required Packages
-# Install packages if necessary
-# install.packages("multiway")
-# install.packages("ThreeWay")
-# install.packages("R.matlab")
-# install.packages("plot3D")
-# install.packages("plotly")
-# install.packages("prospectr")
-# install.packages("MASS")
-# install.packages("caret")
-# install.packages("Stat2Data")
-# install.packages("Metrics")
-# install.packages("lintools")
+#### NOTE: This script can only be used after the 3D matrix has been assembled (using "[5] Function to Create a 3D Array")
+#### Note that the PARAFAC-MLR matrix considers just all of adulterated samples and one pure sample in this case.
 
-library(multiway)
-library(ThreeWay)
-library(R.matlab)
-library(plot3D)
-library(plotly)
-library(prospectr)
-library(MASS)
-library(caret)
-library(Stat2Data)
-library(Metrics)
-library(lintools)
+### PARAFAC-MLR
+### (Parallel factor analysis - multiple linear regression)
 
-## Loading Data
-setwd("C:/Path/To/Your/Data")
-data <- readMat("Sample_calib.mat")
+# Function to automatically install (if needed) and load required packages
+load_required_packages <- function(packages) {
+  for (pkg in packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+    library(pkg, character.only = TRUE)
+  }
+}
+
+# Vector of required packages
+required_packages <- c(
+  "multiway", "ThreeWay", "R.matlab", "plot3D", "plotly", 
+  "prospectr", "MASS", "caret", "Stat2Data", "Metrics", "lintools"
+)
+
+# Run the function to ensure all packages are installed and loaded
+load_required_packages(required_packages)
+
+# Define the input directory where the 3D matrix are attached
+input_directory <- "path/to/your/directory"   # Adjust the path as needed
+# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+# For compatibility, replace backslashes "\" with forward slashes "/" in your path.
 
 concentration <- c(0.00001, 0.75, 1.25, 1.5, 2.0, 2.75, 3.0, 3.49, 4.01, 4.48, 5.0, 6.01, 7.0, 7.94, 9.25, 9.97)
-                  # Adjust according your data
+# Here, enter the vector of concentrations according to the dataset you are working with.
+
 x <- data$x
 y <- concentration
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
 nmEM <- t(data.frame(seq(301, 700, by = 1)))
+# Here, the emission number has changed due to the clipping of the excitation-emission matrix performed in preprocessing. 
+# Change the values ​​according to your dataset, if necessary.
+# Make sure that the emission number is in accordance with the second dimension of the 3D matrix.
 
 ## Data Visualization
 # Matrix dimensions
@@ -114,13 +118,19 @@ ycal_new <- c(ycal[-cal_mut], ypred[pred_mut])
 xpred_new <- rbind(xpred[-pred_mut, ], xcal[cal_mut, ])
 ypred_new <- c(ypred[-pred_mut], ycal[cal_mut])
 
-# Outlier Removal
-index_outlier <- which(ypred_new == 5.0)
+# Outlier Removal (opcional)
+# Remove any sample if you identify that it is the only one that does not fit correctly to the regression line.
+index_outlier <- which(ypred_new == 5.0) # In this case, the sample was removed.
 xpred_clean <- xpred_new[-index_outlier, ]
 ypred_clean <- ypred_new[-index_outlier]
+# WARNING: This specific sample was removed considering the separation into training and testing 
+# performed on the day of analysis by the authors of this work 
+# and the results presented by the model for this specific set. 
+# Consider that when separating the data into training and testing, the set may change. 
+# Therefore, analyze the results before removing any outliers.
 
 ## Regression Model (MLR)
-xcal_df <- data.frame(xcal_new)
+xcal_df <- data.frame(xcal_new) 
 colnames(xcal_df) <- paste0("X", 1:ncol(xcal_new))
 
 model_mlr <- lm(ycal_new ~ ., data = xcal_df)

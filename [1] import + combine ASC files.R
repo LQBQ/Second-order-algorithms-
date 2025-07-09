@@ -72,7 +72,7 @@ for (i in seq(1, length(files), by = files_per_sample)) {
   sample_files <- files[i:(i + files_per_sample - 1)]
   
   # Extract the sample name (e.g., T1, C2) from the file name
-  sample_name <- sub("^((A[0-9]+)|(P[0-9]+)).*", "\\1", sample_files[1], ignore.case = TRUE)
+  sample_name <- sub("^((A[0-9]+)|(PU[0-9]+)).*", "\\1", sample_files[1], ignore.case = TRUE)
   
   # Process and store the data
   data_list[[sample_name]] <- process_sample(sample_files)

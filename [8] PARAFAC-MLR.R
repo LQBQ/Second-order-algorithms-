@@ -162,3 +162,62 @@ RMSEC <- rmse(ycal_new, ycal_calc)
 MAE_pred <- mean(abs(ypred_clean - ypred_calc))
 R2pred <- cor(ypred_clean, ypred_calc)^2
 RMSEP <- rmse(ypred_clean, ypred_calc)
+
+################################################################################
+## PARAFAC-MLR – Script Explanation
+##
+## This script implements a chemometric modeling pipeline combining
+## Parallel Factor Analysis (PARAFAC) for feature extraction and
+## Multiple Linear Regression (MLR) for quantitative prediction of analyte concentration.
+##
+## 1. Package Management:
+##    - Loads and installs all necessary packages automatically for data handling,
+##      modeling, and visualization.
+##
+## 2. Data Input:
+##    - Loads a three-way data array (`x`) from a preprocessed fluorescence excitation-emission matrix (EEM).
+##    - Defines the `concentration` vector representing known analyte concentrations.
+##    - Sets emission (nmEM) and excitation (nmEX) axes.
+##
+## 3. Visualization:
+##    - Visual inspection of the average sample spectrum using `filled.contour` and `matplot`
+##      to assess general signal characteristics across emission and excitation modes.
+##
+## 4. PARAFAC Decomposition:
+##    - Applies PARAFAC decomposition (`nfac = 6`) to reduce the three-way array into
+##      three matrices (A: scores; B: emission loadings; C: excitation loadings).
+##    - Visualizes sample distribution in the component space and spectral profiles.
+##
+## 5. Calibration/Test Split:
+##    - Uses the Kennard-Stone algorithm to objectively divide the dataset into
+##      calibration and prediction subsets, maintaining space-filling properties.
+##
+## 6. Mutation-Based Learning Method (MLM):
+##    - Introduces a mutation step by swapping a fraction (20%) of calibration and
+##      prediction samples to simulate variability and increase model robustness.
+##
+## 7.  Outlier Handling (Optional):
+##    - Allows manual exclusion of samples (e.g., with known prediction deviation),
+##      although such exclusions should be validated using objective residual/leverage analysis.
+##
+## 8.  Regression Model:
+##    - Fits an MLR model using the calibration subset of PARAFAC scores (`A`) as predictors
+##      and concentration (`ycal_new`) as response variable.
+##
+## 9.  Prediction & Validation:
+##    - Predicts concentrations for both calibration and test samples.
+##    - Produces diagnostic plots: measured vs. predicted concentrations.
+##
+## 10. Performance Metrics:
+##    - Computes MAE, RMSE, and R² for both calibration and prediction datasets to assess
+##      model performance quantitatively.
+##
+##  # Final Remarks:
+##    - This script is structured to provide a complete end-to-end workflow for
+##      spectroscopic regression using tensor decomposition and linear modeling.
+##    - It assumes that the user understands the physical meaning of EEM matrices
+##      and ensures consistent alignment between concentration vectors and sample dimensions.
+##    - Adjust `nfac`, preprocessing, and mutation ratio according to your dataset characteristics.
+##
+################################################################################
+

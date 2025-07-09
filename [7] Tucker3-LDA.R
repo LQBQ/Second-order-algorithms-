@@ -1,46 +1,66 @@
-## Loading Required Packages
-library(multiway)
-library(ThreeWay)
-library(R.matlab)
-library(plot3D)
-library(plotly)
-library(prospectr)
-library(MASS)
-library(caret)
+#### NOTE: This script can only be used after the 3D matrix has been assembled (using "[5] Function to Create a 3D Array")
+#### Note that the Tucker3-LDA matrix considers all samples in this case (pure and adulterated).
 
-## Setting Working Directory
-# In RStudio, go to Session > Set Working Directory > Choose Directory
-dir <- "C:/Path/To/Your/Data"
-setwd(dir)
+### Tucker3-LDA 
+### (Tucker model - linear discriminant analysis)
 
-## Loading Data
-data <- readMat("SampleData.mat")
+# Function to automatically install (if needed) and load required packages
+load_required_packages <- function(packages) {
+  for (pkg in packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+    library(pkg, character.only = TRUE)
+  }
+}
 
+# Vector of required packages
+required_packages <- c(
+  "multiway", "ThreeWay", "R.matlab", "plot3D", "plotly", 
+  "prospectr", "MASS", "caret"
+)
+
+# Run the function to ensure all packages are installed and loaded
+load_required_packages(required_packages)
+
+# Define the input directory where the 3D matrix are attached
+input_directory <- "path/to/your/directory"   # Adjust the path as needed
+# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+# For compatibility, replace backslashes "\" with forward slashes "/" in your path.
+
+## Load Data
+data <- readMat("Sample_Data.mat")
 X <- data$x
-A <- data.frame(matrix(1, nrow = 12, ncol = 1)) # nrow = number of samples class 1
-colnames(A) <- "Class"
-B <- data.frame(matrix(2, nrow = 15, ncol = 1)) # nrow = number of samples class 2
-colnames(B) <- "Class"
 
-Y <- rbind(A, B)
+nmEX <- t(data.frame(seq(310, 430, by = 10)))
+nmEM <- t(data.frame(seq(301, 700, by = 1))) 
+# Here, the emission number has changed due to the clipping of the excitation-emission matrix performed in preprocessing. 
+# Change the values ​​according to your dataset, if necessary.
+# Make sure that the emission number is in accordance with the second dimension of the 3D matrix.
+
+# Total: 27 samples → 12 pure (class 1), 15 adulterated (class 2)
+Y <- factor(c(rep(1, 12), rep(2, 15)))  # As a factor for modeling
+# Again, if you working with other dataset, please, consider change the parameters 
+
+# Accessing only class 1 samples (first 12)
+X1 <- X[1:12,,]
+
+# Accessing only class 2 samples (samples 13 to 27)
+X2 <- X[13:27,,]
+
+X1m <- colMeans(X1)
+X2m <- colMeans(X2)
 
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
 nmEM <- t(data.frame(seq(301, 700, by = 1)))
+# Here, the emission number has changed due to the clipping of the excitation-emission matrix performed in preprocessing. 
+# Change the values ​​according to your dataset, if necessary.
+# Make sure that the emission number is in accordance with the second dimension of the 3D matrix.
 
 ## Visualizing Data
 # Matrix dimensions
 mydim <- dim(X) # samples x emission x excitation
 print(mydim)
-
-# Average matrix of each class
-data2 <- readMat("Class1.mat")
-data3 <- readMat("Class2.mat")
-
-X1 <- data2$x
-X2 <- data3$x
-
-X1m <- colMeans(X1)
-X2m <- colMeans(X2)
 
 # Visualization
 filled.contour(X1m, color.palette = terrain.colors, main = "Class 1")
@@ -119,6 +139,16 @@ cat("Accuracy:", ac_cv, "\nSensitivity:", sens_cv, "\nSpecificity:", spec_cv, "\
 boxplot(pred_train$x[, 1] ~ group_train, col = c("blue", "red"), xlab = "Group", ylab = "LD1", main = "Boxplot (Training)")
 boxplot(pred_test$x[, 1] ~ group_test, col = c("blue", "red"), xlab = "Group", ylab = "LD1", main = "Boxplot (Testing)")
 
+dev.new()
+plot(pred_train$x[, 1], col = as.factor(group_train), pch = 19, 
+     xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Training")
+legend("topleft", legend = c("Pure", "Adulterated"), col = c(1, 2), pch = 19)
+
+dev.new()
+plot(pred_test$x[, 1], col = as.factor(group_test), pch = 19, 
+     xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Test")
+legend("topleft", legend = c("Pure", "Adulterated"), col = c(1, 2), pch = 19)
+
 # Confusion Matrices
 confusion_train <- table(Predicted = pred_train$class, Actual = group_train)
 print("Confusion Matrix - Training Set")
@@ -127,3 +157,60 @@ print(confusion_train)
 confusion_test <- table(Predicted = pred_test$class, Actual = group_test)
 print("Confusion Matrix - Test Set")
 print(confusion_test)
+
+# This script performs a Tucker3 decomposition followed by Linear Discriminant Analysis (LDA) 
+# for classification of fluorescence Excitation-Emission Matrices (EEMs).
+#
+# REQUIREMENTS:
+# - The 3D matrix `X` (samples × emission × excitation) must be previously constructed and loaded.
+# - In this case: 27 total samples → 12 pure (class 1), 15 adulterated (class 2).
+#
+# STEP-BY-STEP OVERVIEW:
+# 1. PACKAGES:
+#    - Automatically installs and loads the required libraries for tensor decomposition, visualization,
+#      preprocessing, and classification.
+#
+# 2. DATA LOADING:
+#    - Loads the fluorescence tensor `X` and defines excitation (nmEX) and emission (nmEM) axes.
+#    - The emission range might be reduced due to preprocessing (e.g., Rayleigh scatter removal).
+#    - Defines class labels `Y` as a factor (1 = pure, 2 = adulterated).
+#
+# 3. VISUALIZATION:
+#    - Computes class-wise mean spectra (`X1m` and `X2m`) and visualizes them with `matplot` and `filled.contour`.
+#
+# 4. TUCKER3 MODEL:
+#    - Tensor is unfolded into 2D for Tucker3 modeling using the `T3func()` function.
+#    - Decomposition performed with equal number of components (`nf = 6`) across all three modes.
+#    - Output matrices:
+#       A = sample scores,
+#       B = emission loadings,
+#       C = excitation loadings,
+#       G = core array (not used here).
+#
+# 5. SCORES AND CLASSIFICATION:
+#    - Scores from `A` are split into class-wise matrices and subsets are selected for training/test 
+#      using the KenStone algorithm (maximizing representativity).
+#    - LDA is performed using the training set and evaluated on:
+#       a) Training set
+#       b) Test set
+#       c) Cross-validation (leave-one-out)
+#
+# 6. METRICS:
+#    - Accuracy, sensitivity (true positive rate), and specificity (true negative rate) are calculated 
+#      for each evaluation strategy.
+#    - Confusion matrices are printed for training and testing sets.
+#
+# 7. VISUALIZATION OF LDA RESULTS:
+#    - Boxplots and scatter plots are used to explore the LD1 component across groups.
+#
+# NOTES:
+# - This Tucker3-LDA pipeline assumes that the EEM dataset has been preprocessed, scaled, and 
+#   shaped consistently.
+# - The number of Tucker components (`nf`) should be optimized based on explained variance (fp), 
+#   stability, or classification performance.
+# - This implementation is suitable for detecting class differences in chemometric applications
+#   such as adulteration detection, sample authentication, or quality control.
+#
+# TO ADAPT:
+# - For other datasets, modify the class labels (`Y`), tensor dimensions, and wavelength axes 
+#   accordingly.

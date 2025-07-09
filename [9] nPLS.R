@@ -1,24 +1,35 @@
-# Install and load required packages
-install.packages("R.matlab")
-library(R.matlab)
+#### NOTE: This script can only be used after the 3D matrix has been assembled (using "[5] Function to Create a 3D Array")
+#### Note that the PARAFAC-MLR matrix considers just all of adulterated samples and one pure sample in this case.
 
-install.packages("pls")
-library(pls)
+### PARAFAC-MLR
+### (Parallel factor analysis - multiple linear regression)
 
-install.packages("Stat2Data")
-library(Stat2Data)
+# Function to automatically install (if needed) and load required packages
+load_required_packages <- function(packages) {
+  for (pkg in packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      install.packages(pkg)
+    }
+    library(pkg, character.only = TRUE)
+  }
+}
 
-install.packages("Metrics")
-library(Metrics)
+# Vector of required packages
+required_packages <- c(
+  "R.matlab", "Stat2Data", "Metrics", "sNPLS", "pls"
+)
 
-install.packages("sNPLS")
-library(sNPLS)
+# Run the function to ensure all packages are installed and loaded
+load_required_packages(required_packages)
 
-# Set working directory and load dataset
-setwd("C:/Path/To/Your/Data")
-data <- readMat("Sample_calib.mat")  # Adjust dataset name
-concentration <- c(0.00001, 0.75 , 1.25, 1.5, 2.0, 2.75, 3.0, 3.49, 4.01, 4.48, 5.0, 6.01, 7.0, 7.94, 9.25, 9.97)
-                  # Adjust according your data
+# Define the input directory where the 3D matrix are attached
+input_directory <- "path/to/your/directory"   # Adjust the path as needed
+# Example: input_directory <- "C:/Users/Chemometric-PC/Documents/IC/Project - EVOO adulteration/Samples/Preprocessed samples"
+# For compatibility, replace backslashes "\" with forward slashes "/" in your path.
+
+concentration <- c(0.00001, 0.75, 1.25, 1.5, 2.0, 2.75, 3.0, 3.49, 4.01, 4.48, 5.0, 6.01, 7.0, 7.94, 9.25, 9.97)
+# Here, enter the vector of concentrations according to the dataset you are working with.
+
 # Extract data matrices
 x <- data$x
 y <- concentration

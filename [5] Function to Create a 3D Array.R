@@ -5,7 +5,7 @@
 create_3d_array <- function() {
   # Step 1: List objects in the global environment matching the pattern "PXXT" or "AXXT"
   objects <- ls(envir = .GlobalEnv)
-  pattern <- "^(P|A)\\d{1,}T$"  # Adjusted pattern (e.g., A10T, PU1T, P10T, ...)
+  pattern <- "^(PU|A)\\d{1,}T$"  # Adjusted pattern (e.g., A10T, PU1T, P10T, ...)
   matrix_names <- grep(pattern, objects, value = TRUE)
   
   # Check if there are any matrices matching the pattern

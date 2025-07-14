@@ -31,7 +31,26 @@ input_directory <- "path/to/your/directory"   # Adjust the path as needed
 concentration <- c(0.00001, 0.75, 1.25, 1.5, 2.0, 2.75, 3.0, 3.49, 4.01, 4.48, 5.0, 6.01, 7.0, 7.94, 9.25, 9.97)
 # Here, enter the vector of concentrations according to the dataset you are working with.
 
-x <- data$x
+## Load Data
+data <- readMat("Sample_Data.mat") # Change the archive name to those that you chose 
+mat <- data$x # Access the data matrix in the .mat file
+
+### If you dataset have a mix of samples (regression and calibration samples), you must need perform a average of calibration samples, 
+# and then you must concatenate the average samples matrix and the regression matrix (the other samples).
+
+# Average the first 12 samples (pure samples) along the first dimension (row/samples)
+# If you working with other dataset matrix, you must analyze your dataset and change the parameters 
+average_m <- apply(Mat[1:12, , ], c(2, 3), mean)  # result: a 2D matrix (emission x excitation)
+
+# Resize the 3D matrix with one sample (1 x emission x excitation)
+average_3D <- array(average_m, dim = c(1, dim(X)[2], dim(X)[3]))
+
+# Select the other samples (in this study, from 13 onwards)
+reg_samples <- X[13:dim(X)[1], , ]
+
+# Concatenate the avarege array into the remainder
+x <- abind::abind(average_3D, reg_samples, along = 1)
+
 y <- concentration
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
 nmEM <- t(data.frame(seq(301, 700, by = 1)))

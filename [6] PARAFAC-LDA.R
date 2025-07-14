@@ -29,8 +29,8 @@ input_directory <- "path/to/your/directory"   # Adjust the path as needed
 # For compatibility, replace backslashes "\" with forward slashes "/" in your path.
 
 ## Load Data
-data <- readMat("Sample_Data.mat")
-X <- data$x
+data <- readMat("Sample_Data.mat") # Change the archive name to those that you chose 
+X <- data$x # Access the data matrix in the .mat file 
 
 nmEX <- t(data.frame(seq(310, 430, by = 10)))
 nmEM <- t(data.frame(seq(301, 700, by = 1))) 

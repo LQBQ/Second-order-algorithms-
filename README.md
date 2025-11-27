@@ -68,6 +68,8 @@ Run the scripts to process the data and build the chemometric models.
 
 Analyze the results using the provided metrics.
 
+Please, read the tutorial in repository for more guidance
+
 # Final Considerations
 
 This project aims not only to contribute to food quality control but also to expand the teaching of chemometrics at the higher education level. The use of R as a free and accessible tool strengthens this initiative, making chemometric methods more widespread among students and researchers.

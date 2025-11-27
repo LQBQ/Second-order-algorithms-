@@ -1,0 +1,6 @@
+## 📦 Data Availability
+
+* **Raw Data:** The file `Samples.rar` contains the raw `.ASC` instrument files.
+* **Ready-to-Use Data:** The file `eem_cube_cleaned.mat` contains the fully pre-processed 3D EEM matrices.
+
+**Note:** Please use the `.mat` file as the input for scripts **[4] through [7]** (PARAFAC, Tucker, N-PLS, etc.) to reproduce the analysis results.

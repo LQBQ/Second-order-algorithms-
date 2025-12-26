@@ -36,7 +36,7 @@ The scripts are numbered and organized by algorithm and objective. They include 
 #### 2. Outlier Diagnosis & Manual Removal
 Each script includes an interactive step for outlier management.
 1. The script generates a **Hotelling's T² vs. Residuals (Q)** plot.
-2. Identify outliers visually (e.g., a sample named `"P C 0 5"` with high residuals).
+2. Identify outliers visually (e.g., a sample named `"PC05"` with high residuals).
 3. Locate the **"Manual Outlier Removal"** block in the code (usually Step X.5) and add the sample names to the vector:
 
 ```r

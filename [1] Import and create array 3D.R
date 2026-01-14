@@ -84,8 +84,9 @@ output_directory <- selectDirectory(caption = "SELECIONE A PASTA DE SAÍDA (para
 if (!nzchar(output_directory)) {
   stop("Seleção de diretório de saída cancelada. Script terminado.")
 }
-setwd(output_directory) 
+setwd(output_directory)
 
+##########################################################################################
 # --- STEP 4: Define Import Parameters ---
 files_per_sample <- 13  # Adjust as needed (e.g., 13 .ASC files per EEM)
 cat(paste("Usando", files_per_sample, "Files per samples.\n"))
@@ -95,6 +96,7 @@ cat(paste("Usando", files_per_sample, "Files per samples.\n"))
 nmEM_vector <- seq(300, 800, by = 1)
 nmEX_vector <- seq(310, 430, by = 10) 
 
+##########################################################################################
 # --- STEP 5: Processing .ASC Files
 files <- list.files(path = input_directory, pattern = "\\.ASC$", ignore.case = TRUE)
 
@@ -122,7 +124,8 @@ for (i in seq(1, length(files), by = files_per_sample)) {
   eem_matrix_list[[sample_name]] <- process_sample(sample_files, input_directory)
 }
 
-# --- PASSO 6: Creating a 3D Cube
+####################################################################################################
+# --- STEP 6: Creating a 3D Cube
 
 # Ensures the alphabetical order of the samples.
 sample_names_ordered <- sort(names(eem_matrix_list))
@@ -166,7 +169,7 @@ dimnames(eem_cube) <- list(
 cat("Cubo 3D 'eem_cube' criado com sucesso.\n")
 cat(paste("Dimensões Finais: [", paste(dim(eem_cube), collapse = " x "), "]\n"))
 
-
+###########################################################################################
 # --- STEP 7: Defining the Concentration Vector
 ####!!!--- Define concentrations here.---!!!####
 
@@ -233,7 +236,7 @@ if (length(concentration_vector) != n_samples) {
   stop("Erro: O vetor de concentração final não tem o mesmo número de amostras que o cubo EEM.")
 }
 
-
+#################################################################################################
 # --- STEP 8: Save file .mat final ---
 {
 output_filename <- "eem_data.mat"
@@ -257,4 +260,5 @@ cat(" 3. 'sample_names': Vetor de nomes das amostras (", length(sample_names_ord
 cat(" 4. 'nm_emission': Vetor de comprimentos de onda de emissão\n")
 cat(" 5. 'nm_excitation': Vetor de comprimentos de onda de excitação\n")
 }
+
 

@@ -1,12 +1,13 @@
 ####
 # SCRIPT [1] IMPORTING, COMBINING AND CREATING 3D CUBE EEM
 #
-# OBJETIVO:
-# 1. Ler arquivos .ASC brutos de um espectrofluorímetro.
-  # 2. Combinar arquivos de excitação para formar matrizes 2D (EEMs) por amostra.
-    # 3. Empilhar todas as amostras em um único array 3D (cubo).
-      # 4. Mapear e associar um vetor de concentração.
-        # 5. Salvar o cubo 3D, nomes das amostras e concentrações em um arquivo .mat
+# OBJECTIVE:
+# 1. Read raw .ASC files from a spectrofluorometer.
+# 2. Combine excitation files to form 2D matrices (EEMs) per sample.
+# 3. Stack all samples into a single 3D array (cube).
+# 4. Map and associate a concentration vector.
+# 5. Save the 3D cube, sample names, and concentrations to a .mat file.
+
 ###########################################################################################
 # --- STEP 1: Load necessary packages
 {
@@ -260,5 +261,6 @@ cat(" 3. 'sample_names': Vetor de nomes das amostras (", length(sample_names_ord
 cat(" 4. 'nm_emission': Vetor de comprimentos de onda de emissão\n")
 cat(" 5. 'nm_excitation': Vetor de comprimentos de onda de excitação\n")
 }
+
 
 

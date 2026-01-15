@@ -1,15 +1,16 @@
 ####
-# SCRIPT [8] ATUALIZADO: PARAFAC-MLR (Com MLM - Mutation Logic)
+# SCRIPT [6]: PARAFAC-MLR (With MLM - Mutation Logic)
 #
-# OBJETIVO:
-# 1. Carregar dados processados.
-# 2. Seleção balanceada (1 Pura por marca + Adulteradas).
-# 3. Modelagem PARAFAC e Remoção de Outliers.
-# 4. Divisão Treino/Teste via MLM (Kennard-Stone + Mutação).
-# 5. Regressão MLR com Validação Cruzada.
+# OBJECTIVE:
+# 1. Load processed data.
+# 2. Balanced selection (1 Pure per brand + Adulterated).
+# 3. PARAFAC Modeling and Outlier Removal.
+# 4. Train/Test Split via MLM (Kennard-Stone + Mutation).
+# 5. MLR Regression with Cross-Validation.
 ####
 
-# --- PASSO 1: Carregar Pacotes Necessários ---
+##############################################################
+# --- STEP 1: Load Required Packages ---
 {
   load_required_packages <- function(packages) {
     for (pkg in packages) {
@@ -28,12 +29,13 @@
   load_required_packages(required_packages)
 }
 
-# --- PASSO 2: Carregar Arquivos de Dados ---
+########################################################################
+# --- STEP 2: Load Data Files ---
 {
-  cat("Por favor, selecione o arquivo 'eem_cube_cleaned.mat'...\n")
-  mat_cube_path <- rstudioapi::selectFile(caption = "Selecione eem_cube_cleaned.mat",
+  cat("Please select the 'eem_cube_cleaned.mat' file...\n")
+  mat_cube_path <- rstudioapi::selectFile(caption = "Select eem_cube_cleaned.mat",
                                           filter = "MAT Files (*.mat)")
-  if (!nzchar(mat_cube_path)) stop("Seleção cancelada.")
+  if (!nzchar(mat_cube_path)) stop("Selection cancelled.")
   
   data_cube <- readMat(mat_cube_path)
   names(data_cube) <- gsub("\\.mat$", "", names(data_cube))
@@ -44,28 +46,31 @@
   nmEM <- as.vector(data_cube$nm.emission)
   nmEX <- as.vector(data_cube$nm.excitation)
   
-  cat("Dados carregados com sucesso!\n")
+  cat("Data loaded successfully!\n")
 }
 
-# --- PASSO 3: Preparação dos Dados (Seleção Balanceada) ---
+#######################################################################
+# --- STEP 3: Data Preparation (Balanced Selection) ---
 {
+  # Create brand labels
   Y_multiclasse <- factor(
-    ifelse(grepl("^A", sample_names), "Marca A",
-           ifelse(grepl("^B", sample_names), "Marca B",
-                  ifelse(grepl("^C", sample_names), "Marca C",
-                         ifelse(grepl("^D", sample_names), "Marca D", "Puro")))
+    ifelse(grepl("^A", sample_names), "Brand A",
+           ifelse(grepl("^B", sample_names), "Brand B",
+                  ifelse(grepl("^C", sample_names), "Brand C",
+                         ifelse(grepl("^D", sample_names), "Brand D", "Pure")))
     )
   )
     
     set.seed(42) 
     
-    # Seleção de Adulterados (Máximo disponível ou 10)
-    sel_indices_A <- sample(which(Y_multiclasse == "Marca A"), size = min(10, sum(Y_multiclasse == "Marca A")))
-    sel_indices_B <- sample(which(Y_multiclasse == "Marca B"), size = min(10, sum(Y_multiclasse == "Marca B")))
-    sel_indices_C <- sample(which(Y_multiclasse == "Marca C"), size = min(10, sum(Y_multiclasse == "Marca C")))
-    sel_indices_D <- sample(which(Y_multiclasse == "Marca D"), size = min(10, sum(Y_multiclasse == "Marca D")))
+    # Selection of Adulterated samples (Max available or 10)
+    # Updated logic to match "Brand" instead of "Marca"
+    sel_indices_A <- sample(which(Y_multiclasse == "Brand A"), size = min(10, sum(Y_multiclasse == "Brand A")))
+    sel_indices_B <- sample(which(Y_multiclasse == "Brand B"), size = min(10, sum(Y_multiclasse == "Brand B")))
+    sel_indices_C <- sample(which(Y_multiclasse == "Brand C"), size = min(10, sum(Y_multiclasse == "Brand C")))
+    sel_indices_D <- sample(which(Y_multiclasse == "Brand D"), size = min(10, sum(Y_multiclasse == "Brand D")))
     
-    # Seleção de Puros (1 de cada marca)
+    # Selection of Pure samples (1 from each brand)
     indices_todos_zeros <- which(concentrations == 0)
     nomes_zeros <- sample_names[indices_todos_zeros]
     
@@ -81,60 +86,148 @@
     Y_conc <- concentrations[indices_balanceados] 
     nomes_amostras <- sample_names[indices_balanceados]
     
-    cat(paste("\nDataset preparado. Dimensões X:", paste(dim(X), collapse=" x "), "\n"))
+    cat(paste("\nDataset prepared. X Dimensions:", paste(dim(X), collapse=" x "), "\n"))
 }
 
-# --- PASSO 4: Modelo PARAFAC ---
+##################################################################################
+# --- STEP 4: PARAFAC Modeling ---
 {
   set.seed(24)
-  num_factors <- 7 
+  num_factors <- 8 
   
-  cat(paste("Modelando PARAFAC com", num_factors, "fatores...\n"))
-  model <- parafac(X, nfac=num_factors, nstart=75, maxit=3000, 
+  cat(paste("Modeling PARAFAC with", num_factors, "factors...\n"))
+  model <- parafac(X, nfac=num_factors, nstart=75, maxit=5000, 
                    ctol=1e-6, parallel=FALSE, output = c("best", "all"))
-  cat(paste("Modelo PARAFAC R² (Fit):", round(model$Rsq, 5), "\n"))
+  cat(paste("PARAFAC Model R² (Fit):", round(model$Rsq, 5), "\n"))
 }
 
-# --- PASSO 5: Diagnóstico e Remoção Manual ---
-{
-  # Diagnóstico Visual (Pule se quiser apenas rodar direto)
-  rss <- numeric(dim(X)[1])
-  for(i in 1:length(rss)) {
+###################################################################################
+# --- STEP 5: Outlier Diagnostics (RSS and Q vs T²) ---
+  # 1. RECONSTRUCTION ERROR CALCULATION (RSS / Q-statistic)
+{ nfac <- ncol(model$A)
+  n_samples <- dim(X)[1]
+  rss <- numeric(n_samples)
+  
+  # Reconstruct each sample to calculate the residual
+  for(i in 1:n_samples) {
     recon_i <- matrix(0, nrow = dim(X)[2], ncol = dim(X)[3]) 
-    for(k in 1:num_factors) recon_i <- recon_i + model$A[i,k] * (outer(model$B[,k], model$C[,k]))
+    for(k in 1:nfac) {
+      recon_i <- recon_i + model$A[i,k] * (outer(model$B[,k], model$C[,k]))
+    }
     rss[i] <- sum((X[i,,] - recon_i)^2)
   }
   
-  # LISTA DE REMOÇÃO MANUAL
-  nomes_para_remover <- c() 
+  # Define threshold for RSS (Q)
+  thr_rss <- median(rss) + 3 * IQR(rss)
+  outliers_rss <- which(rss > thr_rss)
+  
+  # PLOT 1: RSS per Sample
+  dev.new()
+  plot(rss, pch = 19, ylab = "RSS (Reconstruction Error)", xlab = "Sample Index",
+       main = "Diagnostic 1: Reconstruction Error (RSS)")
+  abline(h = thr_rss, col = "red", lty = 2)
+  if(length(outliers_rss) > 0){
+    text(outliers_rss, rss[outliers_rss], labels = nomes_amostras[outliers_rss], 
+         pos = 3, col = "red", cex=0.8)
+  }
+  cat("Potential outliers by RSS:", nomes_amostras[outliers_rss], "\n")
+  
+  # 2. HOTELLING T² CALCULATION (Score Space)
+  A <- model$A
+  S_A <- cov(A)
+  T2 <- mahalanobis(A, colMeans(A), S_A)
+  
+  # T² Limit (F-Distribution)
+  alpha <- 0.05
+  T2_lim <- nfac * (n_samples - 1) / (n_samples - nfac) * qf(1 - alpha, nfac, n_samples - nfac)
+  
+  # Q Limit (Recalculated for visual consistency)
+  Q <- rss
+  Q_lim <- median(Q) + 3 * IQR(Q)
+  
+  # PLOT 2: Q vs T² (Influence Plot)
+  # Define colors: Red if Concentration > 0 (Adulterated), Blue if 0 (Pure)
+  cores_plot <- ifelse(Y_conc > 0, "red", "blue")
+  
+  dev.new()
+  plot(T2, Q, pch = 19, col = cores_plot,
+       xlab = expression(Hotelling~T^2),
+       ylab = expression(Q~"(Residuals)"),
+       main = expression("Diagnostic 2: Q vs T"^2))
+  
+  abline(v = T2_lim, col = "darkgreen", lty = 2)
+  abline(h = Q_lim,  col = "darkgreen", lty = 2)
+  
+  # Add labels to all samples (small) or just outliers
+  # Here we label everything for easier visual identification
+  text(T2, Q, labels = nomes_amostras, pos = 3, cex = 0.6, col = "black")
+  
+  legend("topright",
+         legend = c("Adulterated (>0%)", "Pure (0%)", "95% Limits"),
+         col = c("red", "blue", "darkgreen"), pch = c(19,19,NA), lty = c(NA,NA,2))
+  
+  out_QT <- which(T2 > T2_lim | Q > Q_lim)
+  cat("Samples outside limits (Q or T²):", nomes_amostras[out_QT], "\n")
+}
+
+{
+  # 3. MANUAL REMOVAL AND RE-MODELING
+  # ==========================================================
+  # INSERT NAMES TO REMOVE HERE (Based on the plots above)
+  # Example: nomes_para_remover <- c("B0900", "PD02")
+  
+  nomes_para_remover <- c("A0900", "A0800") 
+  
+  # ==========================================================
   
   if (length(nomes_para_remover) > 0) {
+    # Search indices based on names
     outliers_indices <- which(nomes_amostras %in% nomes_para_remover)
+    
+    # Check for not found names
+    nomes_encontrados <- nomes_amostras[outliers_indices]
+    nomes_errados <- setdiff(nomes_para_remover, nomes_encontrados)
+    
+    if(length(nomes_errados) > 0) {
+      cat("\n[WARNING] Names not found:", nomes_errados, "\n")
+    }
+    
     if (length(outliers_indices) > 0) {
-      cat("\nRemovendo", length(outliers_indices), "amostras e recalculando...\n")
+      cat("\nRemoving", length(outliers_indices), "samples and recalculating the model...\n")
+      
+      # Remove from Cube and Auxiliary Vectors
       X <- X[-outliers_indices, , ]
       Y_conc <- Y_conc[-outliers_indices]
       nomes_amostras <- nomes_amostras[-outliers_indices]
       
+      cat("New X Dimensions:", paste(dim(X), collapse=" x "), "\n")
+      
+      # Recalculate PARAFAC
       set.seed(24) 
-      model <- parafac(X, nfac=num_factors, nstart=50, maxit=3000, ctol=1e-6, parallel=F)
-      cat(paste("Novo R²:", round(model$Rsq, 5), "\n"))
+      model <- parafac(X, nfac=num_factors, nstart=75, maxit=5000, 
+                       ctol=1e-6, parallel=FALSE, output = c("best", "all"))
+      
+      cat(paste("New R² (Clean Model):", round(model$Rsq, 5), "\n"))
     } 
+  } else {
+    cat("\nNo samples listed for removal. Keeping original model.\n")
   }
 }
 
-# --- PASSO 6: Visualização Loadings ---
+############################################################################
+# --- STEP 6: Loadings Visualization ---
 {
   dev.new()
   par(mfrow=c(1,2))
-  matplot(nmEM, model$B, type ="l", xlab="Emissão (nm)", ylab="Loadings", main="Modo Emissão")
-  matplot(nmEX, model$C, type ="l", xlab="Excitação (nm)", ylab="Loadings", main="Modo Excitação")
+  matplot(nmEM, model$B, type ="l", xlab="Emission (nm)", ylab="Loadings", main="Emission Mode")
+  matplot(nmEX, model$C, type ="l", xlab="Excitation (nm)", ylab="Loadings", main="Excitation Mode")
   par(mfrow=c(1,1))
 }
 
-# --- PASSO 7: Separação Treino/Teste via MLM (Mutation) ---
+###############################################################################
+# --- STEP 7: Train/Test Split via MLM (Mutation) ---
 {
-  # 1. Configuração Inicial e Kennard-Stone
+  # 1. Initial Configuration and Kennard-Stone
   perc <- 0.7
   A <- model$A
   y <- Y_conc
@@ -142,7 +235,7 @@
   
   combined_data <- cbind(A, y)
   
-  # Kennard-Stone Inicial (Euclidiana)
+  # Initial Kennard-Stone (Euclidean)
   set.seed(2) 
   ks_result <- kenStone(combined_data, k = ntrain, metric = "euclid")
   
@@ -155,11 +248,11 @@
   xpred <- A[prediction_idx, ]
   ypred <- y[prediction_idx]
   
-  cat("Divisão KS Inicial: Treino =", nrow(xcal), "| Teste =", nrow(xpred), "\n")
+  cat("Initial KS Split: Train =", nrow(xcal), "| Test =", nrow(xpred), "\n")
   
-  # 2. Lógica de Mutação (MLM)
-  cat("Aplicando Mutação (Troca de 20% das amostras)...\n")
-  set.seed(1) # Seed para garantir reprodutibilidade da mutação
+  # 2. Mutation Logic (MLM)
+  cat("Applying Mutation (Swapping 20% of samples)...\n")
+  set.seed(2) # Seed to ensure mutation reproducibility
   
   prob <- 0.2
   p_cal <- ceiling(prob * nrow(xcal))
@@ -168,34 +261,35 @@
   cal_mut <- sample(1:nrow(xcal), size = p_cal)
   pred_mut <- sample(1:nrow(xpred), size = p_pred)
   
-  # Criando novos conjuntos mutados
+  # Creating new mutated sets
   xcal_new <- rbind(xcal[-cal_mut, ], xpred[pred_mut, ])
   ycal_new <- c(ycal[-cal_mut], ypred[pred_mut])
   
   xpred_new <- rbind(xpred[-pred_mut, ], xcal[cal_mut, ])
   ypred_new <- c(ypred[-pred_mut], ycal[cal_mut])
   
-  cat("Divisão MLM Final: Treino =", nrow(xcal_new), "| Teste =", nrow(xpred_new), "\n")
+  cat("Final MLM Split: Train =", nrow(xcal_new), "| Test =", nrow(xpred_new), "\n")
   
-  # Preparando DataFrames Finais
+  # Preparing Final DataFrames
   df_train_mlm <- data.frame(Y = ycal_new, xcal_new)
   df_test_mlm  <- data.frame(Y = ypred_new, xpred_new)
   
-  # Ajustando nomes das colunas
+  # Adjusting column names
   colnames(df_train_mlm)[-1] <- paste0("Factor", 1:num_factors)
   colnames(df_test_mlm)[-1]  <- paste0("Factor", 1:num_factors)
 }
 
-# --- PASSO 8: Regressão MLR e Validação Cruzada ---
+##############################################################################
+# --- STEP 8: MLR Regression and Cross-Validation ---
 {
-  # Configuração do Caret (10-Fold CV)
-  ctrl <- trainControl(method = "cv", number = 10)
+  # Caret Configuration (10-Fold CV)
+  ctrl <- trainControl(method = "cv", number = 5)
   
   set.seed(123)
-  # Treina o modelo usando o dataset mutado (df_train_mlm)
+  # Train model using mutated dataset (df_train_mlm)
   model_caret <- train(Y ~ ., data = df_train_mlm, method = "lm", trControl = ctrl)
   
-  # --- Métricas Calibração (Treino Inteiro) ---
+  # --- Calibration Metrics (Whole Training Set) ---
   pred_cal <- predict(model_caret, df_train_mlm)
   obs_cal  <- df_train_mlm$Y
   
@@ -203,12 +297,12 @@
   mae_cal  <- mae(obs_cal, pred_cal)
   r2_cal   <- cor(obs_cal, pred_cal)^2
   
-  # --- Métricas Validação Cruzada (CV) ---
+  # --- Cross-Validation Metrics (CV) ---
   rmse_cv <- model_caret$results$RMSE
   mae_cv  <- model_caret$results$MAE
   r2_cv   <- model_caret$results$Rsquared
   
-  # --- Métricas Predição (Teste Externo) ---
+  # --- Prediction Metrics (External Test) ---
   pred_test <- predict(model_caret, df_test_mlm)
   obs_test  <- df_test_mlm$Y
   
@@ -216,44 +310,45 @@
   mae_test  <- mae(obs_test, pred_test)
   r2_test   <- cor(obs_test, pred_test)^2
   
-  # --- Exibição ---
+  # --- Display ---
   cat("\n=============================================\n")
-  cat(" RESULTADOS FINAIS (PARAFAC-MLR com MLM)\n")
+  cat(" FINAL RESULTS (PARAFAC-MLR with MLM)\n")
   cat("=============================================\n")
-  cat(sprintf("CALIBRAÇÃO (Treino Mutado):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_cal, mae_cal, r2_cal))
+  cat(sprintf("CALIBRATION (Mutated Train):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_cal, mae_cal, r2_cal))
   cat("---------------------------------------------\n")
-  cat(sprintf("VALIDAÇÃO CRUZADA (10-Fold):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_cv, mae_cv, r2_cv))
+  cat(sprintf("CROSS-VALIDATION (10-Fold):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_cv, mae_cv, r2_cv))
   cat("---------------------------------------------\n")
-  cat(sprintf("PREDIÇÃO (Teste Mutado):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_test, mae_test, r2_test))
+  cat(sprintf("PREDICTION (Mutated Test):\n   RMSE: %.4f | MAE: %.4f | R²: %.4f\n", rmse_test, mae_test, r2_test))
   cat("=============================================\n")
 }
 
-# --- PASSO 9: Gráficos Separados ---
+############################################################################
+# --- STEP 9: Separate Plots ---
 {
   lims <- range(c(0, 100, Y_conc))
   
-  # Gráfico 1: Calibração
+  # Plot 1: Calibration
   dev.new()
   plot(obs_cal, pred_cal, pch=19, col="blue", xlim=lims, ylim=lims,
-       xlab="Concentração Real (%)", ylab="Concentração Predita (%)",
-       main="CALIBRAÇÃO (MLM)")
+       xlab="Actual Concentration (%)", ylab="Predicted Concentration (%)",
+       main="CALIBRATION (MLM)")
   abline(0, 1, lty=2, lwd=2, col="gray")
   grid()
   legend("topleft", legend=paste0("R² Cal: ", round(r2_cal, 4)), bty="n")
   
-  # Gráfico 2: Predição
+  # Plot 2: Prediction
   dev.new()
   plot(obs_test, pred_test, pch=19, col="red", xlim=lims, ylim=lims,
-       xlab="Concentração Real (%)", ylab="Concentração Predita (%)",
-       main="PREDIÇÃO (MLM)")
+       xlab="Actual Concentration (%)", ylab="Predicted Concentration (%)",
+       main="PREDICTION (MLM)")
   abline(0, 1, lty=2, lwd=2, col="gray")
   grid()
   legend("topleft", legend=paste0("R² Test: ", round(r2_test, 4)), bty="n", text.col="red")
   
-  # Gráfico 3: Resíduos
+  # Plot 3: Residuals
   dev.new()
   plot(obs_test, (obs_test - pred_test), pch=19, col="darkgreen",
-       xlab="Concentração Real (%)", ylab="Resíduo", main="Resíduos de Predição")
+       xlab="Actual Concentration (%)", ylab="Residual", main="Prediction Residuals")
   abline(h=0, lty=2, col="black")
   grid()
 }

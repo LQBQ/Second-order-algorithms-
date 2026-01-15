@@ -1,5 +1,5 @@
 ####
-# SCRIPT [4]: Complete EEM Pre-processing
+# SCRIPT [3]: Complete EEM Pre-processing
 #
 # OBJECTIVE:
 # 1. Load the raw 3D cube ('eem_data.mat').
@@ -373,3 +373,4 @@ if (nzchar(output_directory)) {
 } else {
   cat("Output directory selection cancelled. The clean file was NOT saved.\n")
 }
+

@@ -1,5 +1,5 @@
 ####
-# SCRIPT [9]: N-PLS (Regression)
+# SCRIPT [7]: N-PLS (Regression)
 #
 # OBJECTIVE:
 # 1. Load processed data ('eem_cube_cleaned.mat').
@@ -408,3 +408,4 @@
   abline(h=0, lty=2, col="black")
   grid()
 }
+

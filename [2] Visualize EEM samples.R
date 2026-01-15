@@ -1,5 +1,5 @@
 ####
-# SCRIPT [2] UPDATED: EEM Sample Visualization (3D and 2D Contour)
+# SCRIPT [2]: EEM Sample Visualization (3D and 2D Contour)
 #
 # OBJECTIVE:
 # 1. Load the processed .mat data cube.
@@ -148,3 +148,4 @@ grafico_2d <- visualize_2D_contour(
   exc_wavelengths = exc_wavelengths,
   sample_name = Sample_Name
 )
+

@@ -1,14 +1,15 @@
 ####
-# SCRIPT [7] ATUALIZADO: TUCKER3-LDA
+# SCRIPT [7]: TUCKER3-LDA
 #
-# OBJETIVO:
-# 1. Carregar dados processados ('eem_cube_cleaned.mat').
-# 2. Gerar rótulos (Y) dinamicamente a partir das concentrações e nomes.
-# 3. Realizar balanceamento de classe robusto (Igual ao script PARAFAC).
-# 4. Construir modelo TUCKER-3 e classificador LDA.
+# OBJECTIVE:
+# 1. Load processed data ('eem_cube_cleaned.mat').
+# 2. Dynamically generate labels (Y) based on concentrations and names.
+# 3. Perform robust class balancing (Same as PARAFAC script).
+# 4. Build TUCKER-3 model and LDA classifier.
 ####
 
-# --- PASSO 1: Carregar Pacotes Necessários ---
+###############################################################
+# --- STEP 1: Load Required Packages ---
 {
   load_required_packages <- function(packages) {
     for (pkg in packages) {
@@ -27,14 +28,15 @@
   load_required_packages(required_packages)
 }
 
-# --- PASSO 2: Carregar Arquivos de Dados ---
+########################################################################
+# --- STEP 2: Load Data Files ---
 {
-  cat("Por favor, selecione o arquivo 'eem_cube_cleaned.mat' (contém dados pré-processados)...\n")
-  mat_cube_path <- rstudioapi::selectFile(caption = "Selecione eem_cube_cleaned.mat",
+  cat("Please select the 'eem_cube_cleaned.mat' file (contains pre-processed data)...\n")
+  mat_cube_path <- rstudioapi::selectFile(caption = "Select eem_cube_cleaned.mat",
                                           filter = "MAT Files (*.mat)")
-  if (!nzchar(mat_cube_path)) stop("Seleção cancelada.")
+  if (!nzchar(mat_cube_path)) stop("Selection cancelled.")
   
-  # Carrega matriz e dados
+  # Load matrix and data
   data_cube <- readMat(mat_cube_path)
   names(data_cube) <- gsub("\\.mat$", "", names(data_cube))
   
@@ -44,137 +46,141 @@
   nmEM <- as.vector(data_cube$nm.emission)
   nmEX <- as.vector(data_cube$nm.excitation)
   
-  cat("Dados carregados com sucesso!\n")
-  cat(paste("Dimensões do Cubo (Amostras x Emissão x Excitação): [", 
+  cat("Data loaded successfully!\n")
+  cat(paste("Cube Dimensions (Samples x Emission x Excitation): [", 
             paste(dim(X_original), collapse = " x "), "]\n"))
 }
 
-# --- PASSO 3: Geração de Rótulos e Balanceamento de Dados ---
+########################################################################
+# --- STEP 3: Label Generation and Data Balancing ---
 {
-  # 1. Gerar rótulos baseados nos nomes e concentrações
+  # 1. Generate labels based on names and concentrations
   
-  # Rótulo binário (Adulterado vs. Puro) para o LDA
-  Y_binario <- factor(ifelse(concentrations > 0, "Adulterado", "Puro"))
+  # Binary label (Adulterated vs. Pure) for LDA
+  # (Translated to English for consistency in plots)
+  Y_binario <- factor(ifelse(concentrations > 0, "Adulterated", "Pure"))
   
-  # Rótulo multiclasse para visualização e seleção
+  # Multiclass label for visualization and selection
+  # (Translated to English)
   Y_multiclasse <- factor(
-    ifelse(grepl("^A", sample_names), "Marca A",
-           ifelse(grepl("^B", sample_names), "Marca B",
-                  ifelse(grepl("^C", sample_names), "Marca C",
-                         ifelse(grepl("^D", sample_names), "Marca D", "Puro"))))
+    ifelse(grepl("^A", sample_names), "Brand A",
+           ifelse(grepl("^B", sample_names), "Brand B",
+                  ifelse(grepl("^C", sample_names), "Brand C",
+                         ifelse(grepl("^D", sample_names), "Brand D", "Pure"))))
   )
   
-  cat("Rótulos gerados dinamicamente:\n")
+  cat("Dynamically generated labels:\n")
   print(table(Y_binario, Y_multiclasse))
   
-  # 2. Balanceamento de Classe (Lógica idêntica ao PARAFAC-LDA)
+  # 2. Class Balancing (Logic identical to PARAFAC-LDA)
   
-  set.seed(42) # Para reprodutibilidade
+  set.seed(42) # For reproducibility
   
-  indices_A <- which(Y_multiclasse == "Marca A")
-  indices_B <- which(Y_multiclasse == "Marca B")
-  indices_C <- which(Y_multiclasse == "Marca C")
-  indices_D <- which(Y_multiclasse == "Marca D")
-  indices_Puras <- which(Y_multiclasse == "Puro")
+  indices_A <- which(Y_multiclasse == "Brand A")
+  indices_B <- which(Y_multiclasse == "Brand B")
+  indices_C <- which(Y_multiclasse == "Brand C")
+  indices_D <- which(Y_multiclasse == "Brand D")
+  indices_Puras <- which(Y_multiclasse == "Pure")
   
-  # Sortear 10 amostras de CADA estrato adulterante (ou o máximo disponível)
+  # Sample 10 samples from EACH adulterant stratum (or the maximum available)
   sel_indices_A <- sample(indices_A, size = min(10, length(indices_A)), replace = FALSE)
   sel_indices_B <- sample(indices_B, size = min(10, length(indices_B)), replace = FALSE)
   sel_indices_C <- sample(indices_C, size = min(10, length(indices_C)), replace = FALSE)
   sel_indices_D <- sample(indices_D, size = min(10, length(indices_D)), replace = FALSE)
   
-  # Combinar índices (Total ~80 amostras)
+  # Combine indices (Total ~80 samples)
   indices_balanceados <- c(sel_indices_A, sel_indices_B, sel_indices_C, sel_indices_D, 
                            indices_Puras)
   
-  # 4. Criar o cubo de dados final e balanceado
+  # 4. Create the final balanced data cube
   X <- X_original[indices_balanceados, , ]
   
-  # 5. Criar os rótulos finais
+  # 5. Create final labels
   Y <- Y_binario[indices_balanceados]
   Y_multi_balanceado <- Y_multiclasse[indices_balanceados]
   nomes_amostras <- sample_names[indices_balanceados]
   
-  cat(paste("\nCubo de dados final balanceado criado com dimensões:", 
+  cat(paste("\nFinal balanced data cube created with dimensions:", 
             paste(dim(X), collapse = " x "), "\n"))
   print(table(Y))
   
-  # 6. Médias para visualização
-  X1 <- X[Y == "Adulterado", , ]
-  X2 <- X[Y == "Puro", , ]
+  # 6. Means for visualization
+  X1 <- X[Y == "Adulterated", , ]
+  X2 <- X[Y == "Pure", , ]
   
   X1m <- colMeans(X1)
   X2m <- colMeans(X2)
 }
 
-# --- PASSO 4: Visualização ---
+#################################################################
+# --- STEP 4: Visualization ---
 
-  dev.new() +
+  dev.new() 
   filled.contour(x = nmEM, y = nmEX, z = X1m, 
-                 color.palette = topo.colors, main = "Média Classe 1 (Adulterado)",
-                 xlab = "Emissão (nm)", ylab = "Excitação (nm)")
+                 color.palette = topo.colors, main = "Class 1 Mean (Adulterated)",
+                 xlab = "Emission (nm)", ylab = "Excitation (nm)")
   
-  dev.new() +
+  dev.new() 
   filled.contour(x = nmEM, y = nmEX, z = X2m, 
-                 color.palette = terrain.colors, main = "Média Classe 2 (Puro)",
-                 xlab = "Emissão (nm)", ylab = "Excitação (nm)")
+                 color.palette = terrain.colors, main = "Class 2 Mean (Pure)",
+                 xlab = "Emission (nm)", ylab = "Excitation (nm)")
   
-  dev.new() +
-  matplot(nmEM, X1m, type="l", xlab = "Comprimento de Onda Emissão (nm)", ylab = "Intensidade", 
-          main = "Classe 1 - Normal (Modo Emissão)")
+  dev.new() 
+  matplot(nmEM, X1m, type="l", xlab = "Emission Wavelength (nm)", ylab = "Intensity", 
+          main = "Class 1 - Normal (Emission Mode)")
   
-  dev.new() +
-  matplot(nmEX, t(X1m), type="l", xlab = "Comprimento de Onda Excitação (nm)", ylab = "Intensidade", 
-          main = "Classe 1 - Normal (Modo Excitação)")
+  dev.new() 
+  matplot(nmEX, t(X1m), type="l", xlab = "Excitation Wavelength (nm)", ylab = "Intensity", 
+          main = "Class 1 - Normal (Excitation Mode)")
 
-
-# --- PASSO 5: Modelo TUCKER-3 ---
+###########################################################################
+# --- STEP 5: TUCKER-3 Model ---
 {
   set.seed(24)
   
-  # DEFINA OS RANKS AQUI (Amostras, Emissão, Excitação)
-  # Diferente do PARAFAC (que tem 1 rank), o Tucker tem 3.
-  # Sugestão: c(3, 3, 3) ou c(4, 4, 4) dependendo da complexidade.
+  # DEFINE RANKS HERE (Samples, Emission, Excitation)
+  # Unlike PARAFAC (which has 1 rank), Tucker has 3.
+  # Suggestion: c(3, 3, 3) or c(4, 4, 4) depending on complexity.
   ranks_tucker <- c(7, 7, 7) 
   
-  cat(paste("Modelando TUCKER-3 com ranks:", paste(ranks_tucker, collapse=","), "...\n"))
+  cat(paste("Modeling TUCKER-3 with ranks:", paste(ranks_tucker, collapse=","), "...\n"))
   
-  # output="all" retorna A, B, C e o Core Tensor (GA)
+  # output="all" returns A, B, C and the Core Tensor (GA)
   model <- tucker(X, nfac=ranks_tucker, nstart=75, maxit=5000, ctol=1e-6, output = c("best", "all"))
-  cat(paste("Modelo Tucker-3 R²:", model$Rsq, "\n"))
+  cat(paste("Tucker-3 Model R²:", model$Rsq, "\n"))
 }
 
-# --- PASSO 6: Diagnóstico de Outliers (RSS e Q vs T²) ---
+# --- STEP 6: Outlier Diagnostics (RSS and Q vs T²) ---
 {
-  # --- Erro de reconstrução por amostra (RSS / Q) ---
-  # No Tucker: X_hat_i = B * (Somatorio_p A[i,p] * Core[p,,]) * t(C)
+  # --- Reconstruction error per sample (RSS / Q) ---
+  # In Tucker: X_hat_i = B * (Sum_p A[i,p] * Core[p,,]) * t(C)
   
   A <- model$A
   B <- model$B
   C <- model$C
   G <- model$G # Core Tensor
   
-  # Garantir que G seja um array 3D [RankA x RankB x RankC]
+  # Ensure G is a 3D array [RankA x RankB x RankC]
   if(is.matrix(G)) G <- array(G, dim = ranks_tucker)
   
   n_samples <- dim(X)[1]
   rss <- numeric(n_samples)
   
-  cat("Calculando resíduos do Tucker (isso pode demorar um pouco)...\n")
+  cat("Calculating Tucker residuals (this might take a while)...\n")
   
   for(i in 1:n_samples) {
-    # 1. Calcular a fatia do Core ponderada pelos scores da amostra i
-    # Core_Slice = Somatorio (A[i, p] * G[p, , ])
+    # 1. Calculate the Core slice weighted by sample i scores
+    # Core_Slice = Sum (A[i, p] * G[p, , ])
     G_slice <- matrix(0, nrow = ranks_tucker[2], ncol = ranks_tucker[3])
     
     for(p in 1:ranks_tucker[1]) {
       G_slice <- G_slice + A[i, p] * G[p, , ]
     }
     
-    # 2. Reconstruir a matriz da amostra i
+    # 2. Reconstruct sample i matrix
     recon_i <- B %*% G_slice %*% t(C)
     
-    # 3. Calcular resíduo
+    # 3. Calculate residual
     resid_i <- X[i,,] - recon_i
     rss[i] <- sum(resid_i^2)
   }
@@ -183,17 +189,17 @@
   outliers_rss <- which(rss > thr)
   
   dev.new()
-  plot(rss, pch = 19, ylab = "RSS (erro de reconstrução)", xlab = "Índice da Amostra",
-       main = "Erro de reconstrução por amostra (Tucker-3)")
+  plot(rss, pch = 19, ylab = "RSS (Reconstruction Error)", xlab = "Sample Index",
+       main = "Reconstruction Error per Sample (Tucker-3)")
   abline(h = thr, col = "red", lty = 2)
   text(outliers_rss, rss[outliers_rss], labels = nomes_amostras[outliers_rss], pos = 3, col = "red", cex=0.8)
   
-  # --- T² Hotelling vs Q residual ---
-  # Usamos a matriz A (Scores das Amostras)
+  # --- Hotelling T² vs Residual Q ---
+  # We use matrix A (Sample Scores)
   S_A <- cov(A)
   T2 <- mahalanobis(A, colMeans(A), S_A)
   
-  nfac_A <- ranks_tucker[1] # Graus de liberdade do modo Amostra
+  nfac_A <- ranks_tucker[1] # Degrees of freedom for Sample mode
   alpha <- 0.05
   T2_lim <- nfac_A * (n_samples - 1) / (n_samples - nfac_A) * qf(1 - alpha, nfac_A, n_samples - nfac_A)
   
@@ -201,25 +207,25 @@
   Q_lim <- median(Q) + 3 * IQR(Q)
   
   dev.new()
-  plot(T2, Q, pch = 19, col = ifelse(Y == "Adulterado", "red", "blue"),
+  plot(T2, Q, pch = 19, col = ifelse(Y == "Adulterated", "red", "blue"),
        xlab = expression(Hotelling~T^2),
-       ylab = expression(Q~"(Erro de reconstrução)"),
-       main = expression("Tucker-3: Gráfico Q vs T"^2))
+       ylab = expression(Q~"(Reconstruction Error)"),
+       main = expression("Tucker-3: Q vs T"^2~"Plot"))
   abline(v = T2_lim, col = "darkgreen", lty = 2)
   abline(h = Q_lim,  col = "darkgreen", lty = 2)
   text(T2, Q, labels = nomes_amostras, pos = 3, cex = 0.6)
   legend("topright",
-         legend = c("Adulterado", "Puro", "Limite 95%"),
+         legend = c("Adulterated", "Pure", "95% Limit"),
          col = c("red", "blue", "darkgreen"), pch = c(19,19,NA), lty = c(NA,NA,2))
   
   out_QT <- which(T2 > T2_lim | Q > Q_lim)
-  cat("Amostras identificadas como outliers (Q–T²):", nomes_amostras[out_QT], "\n")
+  cat("Samples identified as outliers (Q–T²):", nomes_amostras[out_QT], "\n")
 }
 
-# --- PASSO 6.5: Remoção Manual de Outliers por NOME e Re-Modelagem (TUCKER) ---
+# --- STEP 6.5: Manual Outlier Removal by NAME and Re-Modeling (TUCKER) ---
 {
-  # 1. DEFINA AQUI OS NOMES EXATOS PARA REMOVER
-  # Exemplo: nomes_para_remover <- c("B0900", "D0900", "PA02", "PB02", "PD02", "PD03")
+  # 1. DEFINE EXACT NAMES TO REMOVE HERE
+  # Example: nomes_para_remover <- c("B0900", "D0900", "PA02", "PB02", "PD02", "PD03")
   nomes_para_remover <- c("A0900", "C0900", "D0700", "D0010", "PB03", "PC02", "PC03") 
   
   if (length(nomes_para_remover) > 0) {
@@ -230,92 +236,94 @@
     nomes_errados <- setdiff(nomes_para_remover, nomes_encontrados)
     
     if (length(nomes_errados) > 0) {
-      cat("\n[ATENÇÃO] Nomes não encontrados:", nomes_errados, "\n")
+      cat("\n[ATTENTION] Names not found:", nomes_errados, "\n")
     }
     
     if (length(outliers_indices) > 0) {
-      cat("\nRemovendo", length(outliers_indices), "amostras:", nomes_encontrados, "\n")
+      cat("\nRemoving", length(outliers_indices), "samples:", nomes_encontrados, "\n")
       
-      # 2. REMOVER DO CUBO E METADADOS
+      # 2. REMOVE FROM CUBE AND METADATA
       X <- X[-outliers_indices, , ]
       Y <- Y[-outliers_indices]
       nomes_amostras <- nomes_amostras[-outliers_indices]
       
-      cat("Novas dimensões do cubo:", paste(dim(X), collapse=" x "), "\n")
+      cat("New cube dimensions:", paste(dim(X), collapse=" x "), "\n")
       
-      # 3. RECALCULAR O MODELO TUCKER-3
-      cat("Recalculando modelo TUCKER-3 sem outliers...\n")
+      # 3. RECALCULATE TUCKER-3 MODEL
+      cat("Recalculating TUCKER-3 model without outliers...\n")
       set.seed(24) 
       
-      # Re-roda o Tucker com os mesmos ranks
+      # Re-run Tucker with the same ranks
       model <- tucker(X, nfac=ranks_tucker, nstart=75, maxit=5000, ctol=1e-6, output = c("best", "all"))
       
-      # Atualiza R²
-      cat(paste("Modelo Tucker-3 R²:", model$Rsq, "\n"))
+      # Update R²
+      cat(paste("Tucker-3 Model R²:", model$Rsq, "\n"))
       
     } else {
-      cat("Nenhum nome válido encontrado.\n")
+      cat("No valid name found.\n")
     }
     
   } else {
-    cat("Lista de remoção vazia. O modelo original será mantido.\n")
+    cat("Removal list is empty. The original model will be kept.\n")
   }
 }
 
-# --- PASSO 7: Visualização de Scores e Loadings (Adaptado para Tucker) ---
+#############################################################################
+# --- STEP 7: Scores and Loadings Visualization (Adapted for Tucker) ---
 {
-  ## Plot Tucker Scores (Modo 1 - Amostras)
+  ## Plot Tucker Scores (Mode 1 - Samples)
   dev.new()
   fator_x <- 1 
   fator_y <- 2 
   
   plot(model$A[, fator_x], model$A[, fator_y], 
        type = "n",
-       xlab = paste("Fator", fator_x), 
-       ylab = paste("Fator", fator_y), 
-       main = "Scores TUCKER-3 (Matriz A)")
+       xlab = paste("Factor", fator_x), 
+       ylab = paste("Factor", fator_y), 
+       main = "TUCKER-3 Scores (Matrix A)")
   
-  text(x = model$A[Y == "Adulterado", fator_x], 
-       y = model$A[Y == "Adulterado", fator_y], 
-       labels = nomes_amostras[Y == "Adulterado"], 
+  text(x = model$A[Y == "Adulterated", fator_x], 
+       y = model$A[Y == "Adulterated", fator_y], 
+       labels = nomes_amostras[Y == "Adulterated"], 
        col = "red", cex = 0.7)
   
-  text(x = model$A[Y == "Puro", fator_x], 
-       y = model$A[Y == "Puro", fator_y], 
-       labels = nomes_amostras[Y == "Puro"], 
+  text(x = model$A[Y == "Pure", fator_x], 
+       y = model$A[Y == "Pure", fator_y], 
+       labels = nomes_amostras[Y == "Pure"], 
        col = "blue", cex = 0.7)
   
-  legend("topright", legend = c("Adulterado", "Puro"), col = c("red", "blue"), pch = 19)
+  legend("topright", legend = c("Adulterated", "Pure"), col = c("red", "blue"), pch = 19)
   grid()
   
-  ## Plot Tucker Loadings (Modo 2 - Emissão)
+  ## Plot Tucker Loadings (Mode 2 - Emission)
   dev.new()
-  matplot(nmEM, model$B, type ="l", xlab = "Comprimento de Onda Emissão (nm)", 
-          ylab = "Loadings", main = "Tucker Loadings - Emissão (Matriz B)")
+  matplot(nmEM, model$B, type ="l", xlab = "Emission Wavelength (nm)", 
+          ylab = "Loadings", main = "Tucker Loadings - Emission (Matrix B)")
   
-  ## Plot Tucker Loadings (Modo 3 - Excitação)
+  ## Plot Tucker Loadings (Mode 3 - Excitation)
   dev.new()
-  matplot(nmEX, model$C, type ="l", xlab = "Comprimento de Onda Excitação (nm)", 
-          ylab = "Loadings", main = "Tucker Loadings - Excitação (Matriz C)")
+  matplot(nmEX, model$C, type ="l", xlab = "Excitation Wavelength (nm)", 
+          ylab = "Loadings", main = "Tucker Loadings - Excitation (Matrix C)")
 }
 
-# --- PASSO 8: Separação Treino/Teste e Modelo LDA ---
+###############################################################################
+# --- STEP 8: Train/Test Split and LDA Model ---
 {
   train_ratio <- 0.7 
   
-  # Definir grupos numéricos (1=Adulterado, 2=Puro)
-  group_numeric <- ifelse(Y == "Adulterado", 1, 2)
+  # Define numeric groups (1=Adulterated, 2=Pure)
+  group_numeric <- ifelse(Y == "Adulterated", 1, 2)
   
-  # Scores das classes (Usando Matriz A do Tucker)
-  # Diferente do PARAFAC, aqui temos 'ranks_tucker[1]' colunas
-  scores_X1 <- model$A[group_numeric == 1, ] # Scores Adulterados
-  scores_X2 <- model$A[group_numeric == 2, ] # Scores Puros
+  # Class Scores (Using Tucker Matrix A)
+  # Unlike PARAFAC, here we have 'ranks_tucker[1]' columns
+  scores_X1 <- model$A[group_numeric == 1, ] # Adulterated Scores
+  scores_X2 <- model$A[group_numeric == 2, ] # Pure Scores
   
-  # Calcular amostras de treino por classe
+  # Calculate training samples per class
   ntrain1 <- ceiling(train_ratio * nrow(scores_X1))
   ntrain2 <- ceiling(train_ratio * nrow(scores_X2))
   
-  # Selecionar amostras (Kennard-Stone)
+  # Select samples (Kennard-Stone)
   sel1 <- kenStone(scores_X1, k = ntrain1)
   sel2 <- kenStone(scores_X2, k = ntrain2)
   
@@ -330,21 +338,22 @@
   test <- rbind(test1, test2)
   group_test <- factor(c(rep(1, nrow(test1)), rep(2, nrow(test2))))
   
-  # Modelo LDA
+  # LDA Model
   model_lda <- lda(train, group_train)
   model_lda_cv <- lda(train, group_train, CV=TRUE)
 }
 
-# --- PASSO 9: Métricas de Performance e Visualização LDA ---
+#########################################################################
+# --- STEP 9: Performance Metrics and LDA Visualization ---
 {
-  # Predições
+  # Predictions
   pred_train <- predict(model_lda, train)
   pred_test <- predict(model_lda, test)
   
-  # Métricas
+  # Metrics
   ac_train <- mean(pred_train$class == group_train) 
-  spec_train <- mean(pred_train$class[group_train == 1] == 1) # Classe 1 (Adulterado)
-  sens_train <- mean(pred_train$class[group_train == 2] == 2) # Classe 2 (Puro)
+  spec_train <- mean(pred_train$class[group_train == 1] == 1) # Class 1 (Adulterated)
+  sens_train <- mean(pred_train$class[group_train == 2] == 2) # Class 2 (Pure)
   
   ac_cv <- mean(model_lda_cv$class == group_train)
   spec_cv <- mean(model_lda_cv$class[group_train == 1] == 1)
@@ -354,42 +363,42 @@
   spec_test <- mean(pred_test$class[group_test == 1] == 1)
   sens_test <- mean(pred_test$class[group_test == 2] == 2)
   
-  # Imprimir os resultados
-  cat("\n--- Métricas do Modelo LDA (Tucker-3) ---\n")
-  cat(" (Classe 1 = Adulterado, Classe 2 = Puro)\n")
-  cat("\n--- Treinamento ---\n")
-  cat("Acurácia:", ac_train, "\nSensibilidade (Puro):", sens_train, "\nEspecificidade (Adulterado):", spec_train, "\n\n")
-  cat("--- Validação Cruzada (CV) ---\n")
-  cat("Acurácia:", ac_cv, "\nSensibilidade (Puro):", sens_cv, "\nEspecificidade (Adulterado):", spec_cv, "\n\n")
-  cat("--- Teste ---\n")
-  cat("Acurácia:", ac_test, "\nSensibilidade (Puro):", sens_test, "\nEspecificidade (Adulterado):", spec_test, "\n\n")
+  # Print results
+  cat("\n--- LDA Model Metrics (Tucker-3) ---\n")
+  cat(" (Class 1 = Adulterated, Class 2 = Pure)\n")
+  cat("\n--- Training ---\n")
+  cat("Accuracy:", ac_train, "\nSensitivity (Pure):", sens_train, "\nSpecificity (Adulterated):", spec_train, "\n\n")
+  cat("--- Cross-Validation (CV) ---\n")
+  cat("Accuracy:", ac_cv, "\nSensitivity (Pure):", sens_cv, "\nSpecificity (Adulterated):", spec_cv, "\n\n")
+  cat("--- Test ---\n")
+  cat("Accuracy:", ac_test, "\nSensitivity (Pure):", sens_test, "\nSpecificity (Adulterated):", spec_test, "\n\n")
   
-  # Matrizes de Confusão
-  confusion_train <- table(Previsto = pred_train$class, Real = group_train)
-  confusion_test <- table(Previsto = pred_test$class, Real = group_test)
+  # Confusion Matrices
+  confusion_train <- table(Predicted = pred_train$class, Actual = group_train)
+  confusion_test <- table(Predicted = pred_test$class, Actual = group_test)
   
-  print("Matriz de Confusão - Treino")
+  print("Confusion Matrix - Training")
   print(confusion_train)
   
-  print("Matriz de Confusão - Teste")
+  print("Confusion Matrix - Test")
   print(confusion_test)
   
-  # Visualização
+  # Visualization
   dev.new()
   boxplot(pred_train$x[, 1] ~ group_train, col = c("red", "blue"), 
-          xlab = "Grupo (1=Adulterado, 2=Puro)", ylab = "LD1", main = "Boxplot (Treino) - Tucker LDA")
+          xlab = "Group (1=Adulterated, 2=Pure)", ylab = "LD1", main = "Boxplot (Training) - Tucker LDA")
   
   dev.new()
   plot(pred_train$x[, 1], col = as.factor(group_train), pch = 19, 
-       xlab = "Amostras", ylab = "LD1", main = "Scatter Plot - Treino")
-  legend("topleft", legend = c("Adulterado (1)", "Puro (2)"), col = c(2, 1), pch = 19)
+       xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Training")
+  legend("topleft", legend = c("Adulterated (1)", "Pure (2)"), col = c(2, 1), pch = 19)
   
   dev.new()
   boxplot(pred_test$x[, 1] ~ group_test, col = c("red", "blue"), 
-          xlab = "Grupo (1=Adulterado, 2=Puro)", ylab = "LD1", main = "Boxplot (Teste) - Tucker LDA")
+          xlab = "Group (1=Adulterated, 2=Pure)", ylab = "LD1", main = "Boxplot (Test) - Tucker LDA")
   
   dev.new()
   plot(pred_test$x[, 1], col = as.factor(group_test), pch = 19, 
-       xlab = "Amostras", ylab = "LD1", main = "Scatter Plot - Teste")
-  legend("topleft", legend = c("Adulterado (1)", "Puro (2)"), col = c(2, 1), pch = 19)
+       xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Test")
+  legend("topleft", legend = c("Adulterated (1)", "Pure (2)"), col = c(2, 1), pch = 19)
 }

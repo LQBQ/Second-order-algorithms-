@@ -1,5 +1,5 @@
 ####
-# SCRIPT [7]: TUCKER3-LDA
+# SCRIPT [5]: TUCKER3-LDA
 #
 # OBJECTIVE:
 # 1. Load processed data ('eem_cube_cleaned.mat').
@@ -402,3 +402,4 @@
        xlab = "Samples", ylab = "LD1", main = "Scatter Plot - Test")
   legend("topleft", legend = c("Adulterated (1)", "Pure (2)"), col = c(2, 1), pch = 19)
 }
+

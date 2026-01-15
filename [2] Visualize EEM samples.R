@@ -1,14 +1,14 @@
 ####
-# SCRIPT [3] ATUALIZADO: Visualização de Amostras EEM (3D e Contorno 2D)
+# SCRIPT [2] UPDATED: EEM Sample Visualization (3D and 2D Contour)
 #
-# OBJETIVO:
-# 1. Carregar o cubo de dados .mat processado.
-# 2. Fornecer funções para visualizar amostras EEM individuais.
-#    - visualize_3D_surface: Gráfico de superfície 3D interativo.
-#    - visualize_2D_contour: Gráfico de contorno 2D (mapa de calor) interativo.
+# OBJECTIVE:
+# 1. Load the processed .mat data cube.
+# 2. Provide functions to visualize individual EEM samples.
+#    - visualize_3D_surface: Interactive 3D surface plot.
+#    - visualize_2D_contour: Interactive 2D contour plot (heatmap).
 ####
 
-# --- PASSO 1: Instalar e Carregar Pacotes Necessários ---
+# --- STEP 1: Install and Load Required Packages ---
 {
   load_required_packages <- function(packages) {
     for (pkg in packages) {
@@ -19,27 +19,27 @@
     }
   }
   
-  # plotly para gráficos interativos, R.matlab para carregar dados
+  # plotly for interactive plots, R.matlab for loading data
   required_packages <- c("plotly", "rstudioapi", "R.matlab")
   
   load_required_packages(required_packages)
 }
 
-# --- PASSO 2: Funções de Visualização ---
+# --- STEP 2: Visualization Functions ---
 
-#' Função 1: Visualiza a superfície 3D (como no seu script original)
-#' @param eem_matrix Uma única matriz 2D [emissão x excitação].
-#' @param em_wavelengths Vetor de comprimentos de onda de emissão (eixo Y).
-#' @param exc_wavelengths Vetor de comprimentos de onda de excitação (eixo X).
-#' @param sample_name (Opcional) Nome/ID da amostra para o título.
+#' Function 1: Visualizes the 3D surface (as in your original script)
+#' @param eem_matrix A single 2D matrix [emission x excitation].
+#' @param em_wavelengths Vector of emission wavelengths (Y-axis).
+#' @param exc_wavelengths Vector of excitation wavelengths (X-axis).
+#' @param sample_name (Optional) Name/ID of the sample for the title.
 visualize_3D_surface <- function(eem_matrix, em_wavelengths, exc_wavelengths, sample_name = NULL) {
   if (is.null(eem_matrix) || nrow(eem_matrix) == 0 || ncol(eem_matrix) == 0) {
-    stop("A matriz de dados deve ser não-nula e ter dimensões maiores que zero.")
+    stop("Data matrix must be non-null and have dimensions greater than zero.")
   }
   
   title_text <- ifelse(is.null(sample_name),
-                       "Superfície 3D da Amostra EEM",
-                       paste("Superfície 3D - Amostra:", sample_name))
+                       "3D Surface of EEM Sample",
+                       paste("3D Surface - Sample:", sample_name))
   
   plot_ly() %>%
     add_surface(z = ~eem_matrix, 
@@ -49,26 +49,26 @@ visualize_3D_surface <- function(eem_matrix, em_wavelengths, exc_wavelengths, sa
     layout(
       title = title_text,
       scene = list(
-        xaxis = list(title = "Excitação (nm)"),
-        yaxis = list(title = "Emissão (nm)"),
-        zaxis = list(title = "Intensidade")
+        xaxis = list(title = "Excitation (nm)"),
+        yaxis = list(title = "Emission (nm)"),
+        zaxis = list(title = "Intensity")
       )
     )
 }
 
-#' Função 2: Visualiza o contorno 2D (mapa de calor) (NOVA FUNÇÃO)
-#' @param eem_matrix Uma única matriz 2D [emissão x excitação].
-#' @param em_wavelengths Vetor de comprimentos de onda de emissão (eixo Y).
-#' @param exc_wavelengths Vetor de comprimentos de onda de excitação (eixo X).
-#' @param sample_name (Opcional) Nome/ID da amostra para o título.
+#' Function 2: Visualizes the 2D contour (heatmap) (NEW FUNCTION)
+#' @param eem_matrix A single 2D matrix [emission x excitation].
+#' @param em_wavelengths Vector of emission wavelengths (Y-axis).
+#' @param exc_wavelengths Vector of excitation wavelengths (X-axis).
+#' @param sample_name (Optional) Name/ID of the sample for the title.
 visualize_2D_contour <- function(eem_matrix, em_wavelengths, exc_wavelengths, sample_name = NULL) {
   if (is.null(eem_matrix) || nrow(eem_matrix) == 0 || ncol(eem_matrix) == 0) {
-    stop("A matriz de dados deve ser não-nula e ter dimensões maiores que zero.")
+    stop("Data matrix must be non-null and have dimensions greater than zero.")
   }
   
   title_text <- ifelse(is.null(sample_name),
-                       "Contorno 2D (Mapa de Calor) da Amostra EEM",
-                       paste("Contorno 2D - Amostra:", sample_name))
+                       "2D Contour (Heatmap) of EEM Sample",
+                       paste("2D Contour - Sample:", sample_name))
   
   filled.contour(
     x = em_wavelengths, 
@@ -76,62 +76,62 @@ visualize_2D_contour <- function(eem_matrix, em_wavelengths, exc_wavelengths, sa
     z = eem_matrix,
     color.palette = topo.colors, 
     main = title_text,
-    xlab = "Emissão (nm)",
-    ylab = "Excitação (nm)"
+    xlab = "Emission (nm)",
+    ylab = "Excitation (nm)"
   )
 }
 
-# --- PASSO 3: Exemplo de Uso ---
+# --- STEP 3: Usage Example ---
 
-# 1. Selecione o arquivo .mat que criamos no script consolidado
+# 1. Select the .mat file created in the consolidated script
 {
-mat_file_path <- rstudioapi::selectFile(caption = "Selecione o arquivo eem_data.mat",
+mat_file_path <- rstudioapi::selectFile(caption = "Select the eem_data.mat file",
                                         filter = "MAT Files (*.mat)")
 
 if (!nzchar(mat_file_path)) {
-  stop("Nenhum arquivo selecionado. Script terminado.")
+  stop("No file selected. Script terminated.")
 }
   }
-# 2. Carregue os dados do arquivo .mat
+# 2. Load data from the .mat file
 eem_data <- readMat(mat_file_path)
 
-# 3. Extraia os componentes (usando os nomes que definimos)
-#    Nota: readMat pode adicionar '.mat' ao nome do objeto, removemos se existir
+# 3. Extract components (using the names we defined)
+#    Note: readMat might add '.mat' to the object name; we remove it if it exists
 {
 names(eem_data) <- gsub("\\.mat$", "", names(eem_data))
 eem_cube_raw <- eem_data$cube
-sample_names <- unlist(eem_data$sample.names) # Garante que seja um vetor
-em_wavelengths <- as.vector(eem_data$nm.emission) # Garante que seja um vetor
-exc_wavelengths <- as.vector(eem_data$nm.excitation) # Garante que seja um vetor
+sample_names <- unlist(eem_data$sample.names) # Ensure it is a vector
+em_wavelengths <- as.vector(eem_data$nm.emission) # Ensure it is a vector
+exc_wavelengths <- as.vector(eem_data$nm.excitation) # Ensure it is a vector
 }
 
-cat("Dados carregados com sucesso!\n")
-cat(paste(length(sample_names), "amostras encontradas.\n"))
+cat("Data loaded successfully!\n")
+cat(paste(length(sample_names), "samples found.\n"))
 
 
-# 4. Escolha qual amostra visualizar
-#    Pode ser por índice (ex: 1) ou por nome (ex: "D0005")
+# 4. Choose which sample to visualize
+#    Can be by index (e.g., 1) or by name (e.g., "D0005")
 
-# --- Exemplo por Índice ---
+# --- Example by Index ---
 {
-Sample_ID_Index <- 10 # Mude para o índice da amostra que deseja ver
+Sample_ID_Index <- 10 # Change to the index of the sample you want to view
 Sample_Name <- sample_names[Sample_ID_Index]
 eem_to_plot <- eem_cube_raw[Sample_ID_Index, , ]
 }
 
-# --- Exemplo por Nome (descomente para usar) ---
+# --- Example by Name (uncomment to use) ---
 {
- Sample_Name <- "PA05" # Mude para o nome da amostra que deseja ver
- Sample_ID_Index <- which(sample_names == Sample_Name)
- if(length(Sample_ID_Index) == 0) stop("Nome da amostra não encontrado.")
- eem_to_plot <- eem_cube_raw[Sample_ID_Index, , ]
+ # Sample_Name <- "PA05" # Change to the name of the sample you want to view
+ # Sample_ID_Index <- which(sample_names == Sample_Name)
+ # if(length(Sample_ID_Index) == 0) stop("Sample name not found.")
+ # eem_to_plot <- eem_cube_raw[Sample_ID_Index, , ]
 }
 
 
-# 5. Gere os gráficos para a amostra selecionada
-cat(paste("Gerando gráficos para a amostra:", Sample_Name, "(Índice:", Sample_ID_Index, ")\n"))
+# 5. Generate plots for the selected sample
+cat(paste("Generating plots for sample:", Sample_Name, "(Index:", Sample_ID_Index, ")\n"))
 
-# Gráfico 3D
+# 3D Plot
 grafico_3d <- visualize_3D_surface(
   eem_matrix = eem_to_plot,
   em_wavelengths = em_wavelengths,
@@ -140,7 +140,7 @@ grafico_3d <- visualize_3D_surface(
 )
 print(grafico_3d)
 
-# Gráfico 2D (Mapa de Calor)
+# 2D Plot (Heatmap)
 dev.new()
 grafico_2d <- visualize_2D_contour(
   eem_matrix = eem_to_plot,

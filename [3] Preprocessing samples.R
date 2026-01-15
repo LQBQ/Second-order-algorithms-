@@ -1,18 +1,17 @@
 ####
-# SCRIPT [4] ATUALIZADO (v2): Pré-processamento EEM Completo
+# SCRIPT [4]: Complete EEM Pre-processing
 #
-# NOME: [4] preprocessing_EEM.R
-#
-# OBJETIVO:
-# 1. Carregar o cubo 3D bruto ('eem_data.mat').
-# 2. (ETAPA A) Aplicar a remoção de espalhamento (Rayleigh, Raman).
-# 3. (ETAPA B) Aplicar correção de baseline.
-# 4. (ETAPA C) Aplicar suavização Savitzky-Golay.
-# 5. (NOVO) Oferecer visualização imediata do resultado.
-# 6. Salvar o cubo 3D final e limpo ('eem_cube_cleaned.mat').
+# OBJECTIVE:
+# 1. Load the raw 3D cube ('eem_data.mat').
+# 2. (STEP A) Apply scattering removal (Rayleigh, Raman).
+# 3. (STEP B) Apply baseline correction.
+# 4. (STEP C) Apply Savitzky-Golay smoothing.
+# 5. (NEW) Offer immediate visualization of the result.
+# 6. Save the final clean 3D cube ('eem_cube_cleaned.mat').
 ####
 
-# --- PASSO 1: Instalar e Carregar Pacotes Necessários ---
+###########################################################################
+# --- STEP 1: Install and Load Required Packages ---
 {
   load_required_packages <- function(packages) {
     for (pkg in packages) {
@@ -23,15 +22,15 @@
     }
   }
   
-  # Adicionamos 'plotly' (para a função de plot 3D) e 'baseline'
   required_packages <- c("zoo", "signal", "R.matlab", "rstudioapi", 
                          "baseline", "plotly")
   
   load_required_packages(required_packages)
 }
 
-# --- PASSO 2: Função de Remoção de Espalhamento (ETAPA A) ---
-# (Função 'removeScatteringR' original preprocessing.R])
+###########################################################################
+# --- STEP 2: Scattering Removal Function (STEP A) ---
+# (Original 'removeScatteringR' function from preprocessing.R)
 removeScatteringR <- function(eem_matrix, exc_wavelengths, em_wavelengths, 
                               Rayleigh_1st, Rayleigh_2nd, Rayleigh_3rd, 
                               Raman_1st, Raman_2nd, raman_offset) {
@@ -48,8 +47,6 @@ removeScatteringR <- function(eem_matrix, exc_wavelengths, em_wavelengths,
   }
   
   eem_cleaned <- eem_matrix
-  
-  # ... (O código de remoção de espalhamento e interpolação PCHIP preprocessing.R] continua aqui) ...
   
   # --- 2. Scattering Removal (Masking with NaN) ---
   for (sampleIdx in 1:nSamples) {
@@ -83,7 +80,7 @@ removeScatteringR <- function(eem_matrix, exc_wavelengths, em_wavelengths,
   }
   
   # --- 3. Interpolation (PCHIP) by Sample and Excitation (Column-wise) ---
-  cat("ETAPA A: Iniciando remoção de espalhamento e interpolação PCHIP...\n")
+  cat("STEP A: Starting scattering removal and PCHIP interpolation...\n")
   pb <- txtProgressBar(min = 0, max = nSamples, style = 3) 
   
   for (sampleIdx in 1:nSamples) {
@@ -127,12 +124,13 @@ removeScatteringR <- function(eem_matrix, exc_wavelengths, em_wavelengths,
     setTxtProgressBar(pb, sampleIdx) 
   }
   close(pb)
-  cat("\nETAPA A: Interpolação PCHIP concluída.\n")
+  cat("\nSTEP A: PCHIP interpolation completed.\n")
   return(eem_cleaned)
 }
 
-# --- PASSO 3: Função para Baseline e Suavização (ETAPAS B e C) ---
-# (Função 'apply_baseline_and_smoothing' que criamos anteriormente)
+#########################################################################
+# --- STEP 3: Baseline and Smoothing Function (STEPS B and C) ---
+# (Function 'apply_baseline_and_smoothing' previously created)
 apply_baseline_and_smoothing <- function(eem_cube, 
                                          baseline_method = 'modpoly', 
                                          baseline_degree = 4,
@@ -140,7 +138,7 @@ apply_baseline_and_smoothing <- function(eem_cube,
                                          sgolay_n = 11) {
   
   if (sgolay_n %% 2 == 0) {
-    stop(paste("O tamanho da janela S-G (sgolay_n =", sgolay_n, ") deve ser ímpar."))
+    stop(paste("The S-G window size (sgolay_n =", sgolay_n, ") must be odd."))
   }
   
   eem_final <- eem_cube
@@ -150,7 +148,7 @@ apply_baseline_and_smoothing <- function(eem_cube,
   nEm <- dimensions[2]
   nEx <- dimensions[3]
   
-  cat("ETAPA B/C: Iniciando correção de baseline e suavização S-G...\n")
+  cat("STEP B/C: Starting baseline correction and S-G smoothing...\n")
   pb <- txtProgressBar(min = 0, max = nSamples * nEx, style = 3) 
   
   for (i in 1:nSamples) {
@@ -159,7 +157,7 @@ apply_baseline_and_smoothing <- function(eem_cube,
       spectrum <- eem_cube[i, , j]
       spec_matrix <- matrix(spectrum, ncol = 1)
       
-      # ETAPA B: Correção de Baseline
+      # STEP B: Baseline Correction
       bl_correction <- try(baseline::baseline(spec_matrix, 
                                               method = baseline_method, 
                                               degree = baseline_degree), 
@@ -171,7 +169,7 @@ apply_baseline_and_smoothing <- function(eem_cube,
         spectrum_corrected <- baseline::getCorrected(bl_correction)
       }
       
-      # ETAPA C: Suavização Savitzky-Golay
+      # STEP C: Savitzky-Golay Smoothing
       spectrum_smoothed <- signal::sgolayfilt(spectrum_corrected, 
                                               p = sgolay_p, 
                                               n = sgolay_n)
@@ -184,20 +182,21 @@ apply_baseline_and_smoothing <- function(eem_cube,
   }
   
   close(pb)
-  cat("\nETAPA B/C: Baseline e suavização concluídos.\n")
+  cat("\nSTEP B/C: Baseline and smoothing completed.\n")
   return(eem_final)
 }
 
-# --- PASSO 4: Funções de Visualização (COPIADAS DO SCRIPT [3]) ---
+#########################################################################
+# --- STEP 4: Visualization Functions (COPIED FROM SCRIPT [3]) ---
 
-#' Função 1: Visualiza a superfície 3D (plotly)
+#' Function 1: Visualizes the 3D surface (plotly)
 visualize_3D_surface <- function(eem_matrix, em_wavelengths, exc_wavelengths, sample_name = NULL) {
   if (is.null(eem_matrix) || nrow(eem_matrix) == 0 || ncol(eem_matrix) == 0) {
-    stop("A matriz de dados deve ser não-nula e ter dimensões maiores que zero.")
+    stop("Data matrix must be non-null and have dimensions greater than zero.")
   }
   title_text <- ifelse(is.null(sample_name),
-                       "Superfície 3D da Amostra EEM",
-                       paste("Superfície 3D - Amostra:", sample_name))
+                       "3D Surface of EEM Sample",
+                       paste("3D Surface - Sample:", sample_name))
   
   plot_ly() %>%
     add_surface(z = ~eem_matrix, 
@@ -207,26 +206,26 @@ visualize_3D_surface <- function(eem_matrix, em_wavelengths, exc_wavelengths, sa
     layout(
       title = title_text,
       scene = list(
-        xaxis = list(title = "Excitação (nm)"),
-        yaxis = list(title = "Emissão (nm)"),
-        zaxis = list(title = "Intensidade")
+        xaxis = list(title = "Excitation (nm)"),
+        yaxis = list(title = "Emission (nm)"),
+        zaxis = list(title = "Intensity")
       )
     )
 }
 
-#' Função 2: Visualiza o contorno 2D (filled.contour)
+#' Function 2: Visualizes the 2D contour (filled.contour)
 visualize_2D_contour <- function(eem_matrix, em_wavelengths, exc_wavelengths, sample_name = NULL) {
   if (is.null(eem_matrix) || nrow(eem_matrix) == 0 || ncol(eem_matrix) == 0) {
-    stop("A matriz de dados deve ser não-nula e ter dimensões maiores que zero.")
+    stop("Data matrix must be non-null and have dimensions greater than zero.")
   }
   title_text <- ifelse(is.null(sample_name),
-                       "Contorno 2D (Mapa de Calor) da Amostra EEM",
-                       paste("Contorno 2D - Amostra:", sample_name))
+                       "2D Contour (Heatmap) of EEM Sample",
+                       paste("2D Contour - Sample:", sample_name))
   
   filled.contour(
     x = em_wavelengths, 
     y = exc_wavelengths, 
-    z = eem_matrix, # Transpõe a matriz para Z[x, y]
+    z = eem_matrix, # Transposes the matrix to Z[x, y]
     color.palette = topo.colors,
     main = title_text,
     xlab = "Emission (nm)",
@@ -234,9 +233,10 @@ visualize_2D_contour <- function(eem_matrix, em_wavelengths, exc_wavelengths, sa
   )
 }
 
-# --- PASSO 5: Carregamento e Execução do Pré-processamento ---
+######################################################################
+# --- STEP 5: Loading and Execution of Pre-processing ---
 
-# 1. Defina seus parâmetros de pré-processamento (AJUSTE CONFORME NECESSÁRIO)
+# 1. Define your pre-processing parameters (ADJUST AS NEEDED)
 params_scatter <- list(
   Rayleigh_1st = 15,  
   Rayleigh_2nd = 15, 
@@ -252,13 +252,13 @@ params_smooth <- list(
   sgolay_n = 11              
 )
 
-# 2. Selecione e carregue o arquivo .mat bruto
-cat("Por favor, selecione o arquivo 'eem_data.mat' bruto...\n")
-mat_file_path <- rstudioapi::selectFile(caption = "Selecione o arquivo eem_data.mat",
+# 2. Select and load the raw .mat file
+cat("Please select the raw 'eem_data.mat' file...\n")
+mat_file_path <- rstudioapi::selectFile(caption = "Select the eem_data.mat file",
                                         filter = "MAT Files (*.mat)")
 
 if (!nzchar(mat_file_path)) {
-  stop("Nenhum arquivo selecionado. Script terminado.")
+  stop("No file selected. Script terminated.")
 }
 
 eem_data <- readMat(mat_file_path)
@@ -269,13 +269,13 @@ em_wavelengths <- as.vector(eem_data$nm.emission)
 exc_wavelengths <- as.vector(eem_data$nm.excitation)
 concentrations <- as.vector(eem_data$concentrations)
 
-# Carrega os nomes para usar nos títulos dos gráficos
+# Loads names to use in plot titles
 sample_names <- unlist(eem_data$sample.names) 
 
-cat(paste("Dados brutos carregados. Dimensões:", 
+cat(paste("Raw data loaded. Dimensions:", 
           paste(dim(eem_cube_raw), collapse = " x "), "\n"))
 
-# 3. ETAPA A: Execute a remoção de espalhamento
+# 3. STEP A: Execute scattering removal
 eem_cube_scatter_removed <- removeScatteringR(
   eem_matrix = eem_cube_raw, 
   exc_wavelengths = exc_wavelengths, 
@@ -288,7 +288,7 @@ eem_cube_scatter_removed <- removeScatteringR(
   raman_offset = params_scatter$raman_offset
 )
 
-# 4. ETAPA B/C: Execute a correção de baseline e suavização
+# 4. STEP B/C: Execute baseline correction and smoothing
 eem_cube_cleaned <- apply_baseline_and_smoothing(
   eem_cube = eem_cube_scatter_removed,
   baseline_method = params_smooth$baseline_method,
@@ -297,31 +297,32 @@ eem_cube_cleaned <- apply_baseline_and_smoothing(
   sgolay_n = params_smooth$sgolay_n
 )
 
-cat("\n--- Pré-processamento completo --- \n")
+cat("\n--- Pre-processing complete --- \n")
 
-# --- PASSO 6: Verificação Visual (Opcional) ---
+######################################################################
+# --- STEP 6: Visual Verification (Optional) ---
 {
-  prompt <- "Deseja visualizar uma amostra pré-processada antes de salvar? (s/n): "
+  prompt <- "Do you want to visualize a pre-processed sample before saving? (y/n): "
   resposta <- tolower(trimws(readline(prompt)))
   
-  if (resposta == "s" || resposta == "sim") {
+  if (resposta == "y" || resposta == "yes") {
     
-    # Pergunta pelo índice
+    # Ask for the index
     n_samples_total <- dim(eem_cube_cleaned)[1]
-    prompt_idx <- paste0("Digite o NÚMERO (índice) da amostra que deseja ver (1 a ", n_samples_total, "): ")
+    prompt_idx <- paste0("Enter the NUMBER (index) of the sample you want to view (1 to ", n_samples_total, "): ")
     idx_ver <- as.integer(readline(prompt_idx))
     
-    # Valida o índice
+    # Validate the index
     if (!is.na(idx_ver) && idx_ver >= 1 && idx_ver <= n_samples_total) {
       
-      # Extrai os dados para plotar
+      # Extract data to plot
       amostra_para_plotar <- eem_cube_cleaned[idx_ver, , ]
       nome_da_amostra <- sample_names[idx_ver]
-      titulo_plot <- paste(nome_da_amostra, "(Pré-processado)")
+      titulo_plot <- paste(nome_da_amostra, "(Pre-processed)")
       
-      cat(paste("Gerando gráficos para a amostra:", nome_da_amostra, "\n"))
+      cat(paste("Generating plots for sample:", nome_da_amostra, "\n"))
       
-      # Gera Gráfico 3D (interativo)
+      # Generate 3D Plot (interactive)
       print(visualize_3D_surface(
         eem_matrix = amostra_para_plotar,
         em_wavelengths = em_wavelengths,
@@ -329,11 +330,11 @@ cat("\n--- Pré-processamento completo --- \n")
         sample_name = titulo_plot
       ))
       
-      # Gera Gráfico 2D (estático)
-      cat("Pressione [Enter] no console para ver o gráfico 2D...\n")
-      readline() # Pausa para o usuário ver o gráfico 3D
+      # Generate 2D Plot (static)
+      cat("Press [Enter] in the console to view the 2D plot...\n")
+      readline() # Pause for user to see the 3D plot
       
-      dev.new() # Abre uma nova janela gráfica para o contorno
+      dev.new() # Open a new graphics window for the contour
       visualize_2D_contour(
         eem_matrix = amostra_para_plotar,
         em_wavelengths = em_wavelengths,
@@ -342,22 +343,23 @@ cat("\n--- Pré-processamento completo --- \n")
       )
       
     } else {
-      cat("Índice inválido ou não numérico. Pulando visualização.\n")
+      cat("Invalid or non-numeric index. Skipping visualization.\n")
     }
   } else {
-    cat("Pulando visualização.\n")
+    cat("Skipping visualization.\n")
   }
 }
 
-# --- PASSO 7: Salvar o Cubo Limpo ---
-cat("\nPronto para salvar. Por favor, selecione a pasta de SAÍDA para salvar o arquivo limpo.\n")
-output_directory <- selectDirectory(caption = "SELECIONE A PASTA DE SAÍDA")
+####################################################################
+# --- STEP 7: Save Clean Cube ---
+cat("\nReady to save. Please select the OUTPUT folder to save the clean file.\n")
+output_directory <- selectDirectory(caption = "SELECT OUTPUT FOLDER")
 
 if (nzchar(output_directory)) {
   output_filename <- "eem_cube_cleaned.mat"
   output_filepath <- file.path(output_directory, output_filename)
   
-  # Salva o cubo limpo E os vetores de comprimento de onda
+  # Save the clean cube AND the wavelength vectors
   writeMat(output_filepath, 
            cube_cleaned = eem_cube_cleaned,
            nm_emission = em_wavelengths,
@@ -366,8 +368,8 @@ if (nzchar(output_directory)) {
            sample_names = sample_names
            
   )
-  cat(paste("Cubo de dados limpo salvo com sucesso em:", output_filepath, "\n"))
+  cat(paste("Clean data cube saved successfully at:", output_filepath, "\n"))
   
 } else {
-  cat("Seleção de diretório de saída cancelada. O arquivo limpo NÃO foi salvo.\n")
+  cat("Output directory selection cancelled. The clean file was NOT saved.\n")
 }
